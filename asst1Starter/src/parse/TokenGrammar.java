@@ -9,22 +9,22 @@ public class TokenGrammar implements wrangLR.runtime.MessageObject {
 		errorMsg = em;
 	}
 	private ErrorMsg errorMsg;
-	
+
 	public void error(int pos, String msg) {
 		errorMsg.error(pos, msg);
 	}
-	
+
 	public void warning(int pos, String msg) {
 		errorMsg.warning(pos, msg);
 	}
-	
+
 	public void reportTok(int pos, String s) {
 		System.out.println(errorMsg.lineAndChar(pos)+": "+s);
 	}
 
 
 //: start ::= ws* token*
-	
+
 
 //: token ::= # `boolean =>
 public void sawBoolean(int pos) {
@@ -343,22 +343,22 @@ public void sawMinusMinus(int pos) {
 public void sawSlash(int pos) {
      reportTok(pos, "`/");
 }
-	
+
 //: token ::= # ID =>
 public void identifier(int pos, String s) {
 	reportTok(pos, "identifier: "+s);
 }
-	
+
 //: token ::= # INTLIT =>
 public void intLit(int pos, int n) {
 	reportTok(pos, "integer literal: "+n);
 }
-	
+
 //: token ::= # STRINGLIT =>
 public void stringLit(int pos, String s) {
 	reportTok(pos, "string literal: "+s);
 }
-	
+
 //: token ::= # CHARLIT =>
 public void charLit(int pos, int n) {
 	reportTok(pos, "character literal with ASCII value: "+n);
@@ -374,8 +374,23 @@ public void charLit(int pos, int n) {
 // reserved words
 //: `class ::= "class" !idChar ws*
 //: reserved ::= `class
+public void sawClassReserved(int pos) {
+     reportTok(pos, "`class");
+}
 //: `else ::= "else" !idChar ws*
 //: reserved ::= `else
+//: `break ::= "break" !idChar ws*
+//: reserved ::= `break
+//: `extends ::= "extends" !idChar ws*
+//: reserved ::= `else
+//: `public ::= "public" !idChar ws*
+//: reserved ::= `public
+//: `void ::= "void" !idChar ws*
+//: reserved ::= `void
+//: `for ::= "for" !idChar ws*
+//: reserved ::= `for
+//: `instanceof ::= "instanceof" !idChar ws*
+//: reserved ::= `instanceof
 
 //special-token characters
 //: `!= ::= "!=" ws*
@@ -416,7 +431,7 @@ public int convertToInt(int pos, String s) {
 //================================================================
 
 // whitespace
-//: ws ::= {" " 9} // space or tab
+//: ws ::= {" " 9 10 13} // space or tab
 //: ws ::= eol
 
 // to handle the common end-of-line sequences on different types
