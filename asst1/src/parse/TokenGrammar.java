@@ -485,21 +485,23 @@ public void charLit(int pos, int n) {
 
 
 //special-token characters
-//: `! ::= "!" !"=" ws*
 //: `!= ::= "!=" ws*
+//: `! ::= "!" !"=" ws*
 //: `* ::= "*" ws*
-//: `! ::= "!" ws*
 //: `% ::= "%" ws*
 //: `&& ::= "&&" ws*
 //: `( ::= "(" ws*
 //: `) ::= ")" ws*
-//: `++ ::= "+" ws*
 //: `+ ::= "+"!"+" ws*
+//: `++ ::= "++" ws*
 //: `, ::= "," ws*
 //: `- ::= "-" !"-" ws*
 //: `-- ::= "--" ws*
 //: `. ::= "." ws*
-//: `/ ::= "/" !"/" !"*" ws*
+
+//need to modify this for comments still
+//: `/ ::= "/" ws*
+
 //: `; ::= ";" ws*
 //: `< ::= "<" !"=" ws*
 //: `<= ::= "<=" ws*
@@ -530,7 +532,7 @@ public int convertToInt(int pos, String s) {
 //================================================================
 
 // pattern that represents an integer literal (without trailing whitespace)
-//: intLit2 ::= !"0" digit++ !"." => text
+//: intLit2 ::= !"0" digit++ => text
 
 // a character that can be a non-first character in an identifier
 //: idChar ::= letter => pass
@@ -558,7 +560,7 @@ public int convertToInt(int pos, String s) {
 //================================================================
 
 // whitespace
-//: ws ::= {" " 9} => void
+//: ws ::= {" " 9}
 //: ws ::= eol
 
 // to handle the common end-of-line sequences on different types
@@ -576,7 +578,7 @@ public void registerNewline(int pos) {
 }
 
 //: CHARLIT ::= "'"charPrintable"'" ws* =>
-public int zero(char front, char c, char end) { return c;}
+public int zero(char front, char c, char end) { return (int) c;}
 //: ID ::= !reserved letter++ idChar** ws* => text
 //: STRINGLIT ::= '"' stringPrintable** '"' ws* => text
 

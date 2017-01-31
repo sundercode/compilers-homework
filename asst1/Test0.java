@@ -1,12 +1,5 @@
-class Main {
-  void main() {
-    boolean b = new Blizzard().run(null);
-  }
-}
+class foo *
 
-class Blizzard {
-  boolean run(String[] x) {
-    int a = 4;
-    int b = a+215;
-  }
-}
+"butts are the worst"
+'@'
+int blargh = [2]
