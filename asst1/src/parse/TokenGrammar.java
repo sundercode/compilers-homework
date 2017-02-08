@@ -498,10 +498,7 @@ public void charLit(int pos, int n) {
 //: `- ::= "-" !"-" ws*
 //: `-- ::= "--" ws*
 //: `. ::= "." ws*
-
-//need to modify this for comments still
-//: `/ ::= "/" ws*
-
+//: `/ ::= "/" !"*" !"/" ws*
 //: `; ::= ";" ws*
 //: `< ::= "<" !"=" ws*
 //: `<= ::= "<=" ws*
@@ -533,6 +530,7 @@ public int convertToInt(int pos, String s) {
 
 // pattern that represents an integer literal (without trailing whitespace)
 //: intLit2 ::= !"0" digit++ => text
+//: intLit2 ::= "0" => text
 
 // a character that can be a non-first character in an identifier
 //: idChar ::= letter => pass
@@ -544,10 +542,21 @@ public int convertToInt(int pos, String s) {
 //:stringPrintable ::= {"#".."["} => pass
 //:stringPrintable ::= {"]".."~"} => pass
 
+
 //define printable chars, exclude ' and \ from the ranges
 //: charPrintable ::= {" ".."&"} => pass
 //: charPrintable ::= {"(".."["} => pass
 //: charPrintable ::= {"]".."~"} => pass
+
+//printable definitions for comments
+//: comment1Printable ::= {" ".."~"} => pass
+//: comment1Printable ::= {9} => pass
+
+//: comment2Printable ::= eol
+//: comment2Printable ::= !"*" comment1Printable
+//: comment2Printable ::= {9}
+//: comment2Printable ::= "*" !"/"
+
 
 // a letter
 //: letter ::= {"a".."z" "A".."Z"} => pass
@@ -562,6 +571,8 @@ public int convertToInt(int pos, String s) {
 // whitespace
 //: ws ::= {" " 9}
 //: ws ::= eol
+//: ws ::= comment
+
 
 // to handle the common end-of-line sequences on different types
 // of systems, we treat the sequence CR+LF as an end of line.
@@ -570,6 +581,7 @@ public int convertToInt(int pos, String s) {
 //: eol ::= {10} registerNewline
 //: eol ::= {13} {10} registerNewline
 //: eol ::= {13} !{10} registerNewline // CR alone only if not followed by LF
+//: eol ::= {12} registerNewline
 
 // empty symbol which registers a new line at the position reduced
 //: registerNewline ::= # =>
@@ -579,7 +591,17 @@ public void registerNewline(int pos) {
 
 //: CHARLIT ::= "'"charPrintable"'" ws* =>
 public int zero(char front, char c, char end) { return (int) c;}
-//: ID ::= !reserved letter++ idChar** ws* => text
-//: STRINGLIT ::= '"' stringPrintable** '"' ws* => text
 
+//: ID ::= !reserved letter++ idChar** ws* => text
+//: STRINGLIT ::= '"' stringPrintable** '"' ws* =>
+public String remove(char front, List<Character> s, char end) { 
+    String x = "";
+    for(Character i : s)
+           x += i;
+    return x;
+}
+
+//comments
+//: comment ::= "/*" comment2Printable** "*/"
+//: comment ::= "//" comment1Printable** eol
 }
