@@ -5,18 +5,18 @@ import syntaxtree.*;
 
 public class MJGrammar
 		implements wrangLR.runtime.MessageObject, wrangLR.runtime.FilePosObject {
-
+	
 	public static final boolean FILTER_GRAMMAR = true;
-
+	
 	// constructor
 	public MJGrammar(ErrorMsg em) {
 		errorMsg = em;
 		topObject = null;
 	}
-
+	
 	// error message object
 	private ErrorMsg errorMsg;
-
+	
 	// object to be returned by the parser
 	private Program topObject;
 
@@ -34,7 +34,7 @@ public class MJGrammar
 	public String filePosString(int pos) {
 		return errorMsg.lineAndChar(pos);
 	}
-
+	
 	// method that registers a newline
 	public void registerNewline(int pos) {
 		errorMsg.newline(pos-1);
@@ -44,7 +44,7 @@ public class MJGrammar
 	public Program parseResult() {
 		return topObject;
 	}
-
+	
 	//===============================================================
 	// start symbol
 	//===============================================================
@@ -53,7 +53,7 @@ public class MJGrammar
 	public void topLevel(Program obj) {
 		topObject = obj;
 	}
-
+	
 	//================================================================
 	// top-level program constructs ----> use syntaxtree folder to see all classes
 	//================================================================
@@ -100,7 +100,7 @@ public class MJGrammar
 	//================================================================
 
 	//: <stmt> ::= <assign> `; => pass
-
+	
 	//: <stmt> ::= # `{ <stmt>* `} =>
 	public Statement newBlock(int pos, List<Statement> sl) {
 		return new Block(pos, new StatementList(sl));
@@ -116,7 +116,7 @@ public class MJGrammar
 	public Statement localVarDecl(Type t, int pos, String name, Exp init) {
 		return new LocalDeclStatement(pos, new LocalVarDecl(pos, t, name, init));
 	}
-
+	
 	//need to add variable declarations
 	//STATEMENT declarations
 
@@ -128,33 +128,80 @@ public class MJGrammar
 
 	/*
 	TODO:
-	8 - ||
-	7 - &&
-	6 - !=, ==
-	5 - >, <, >=, <=, instanceof
-	3 - /, %
 	2 - unary !, typecast unary (int) oldDouble
 	1 - String Literals, exp1.ID, this, false, true, null, (exp), new ID(), new type [exp]([])*
 	Call expressions - ID(expList?), super.ID(expList?), exp1.ID(expList?)
 	expression list - exp(,exp)*
 	*/
 
-	//: <exp> ::= <exp4> => pass
+	//: <exp> ::= <exp8> => pass
 
+    //: <exp8> ::= <exp8> # `|| <exp7> =>
+    public Exp newOr(Exp e1, int pos, Exp e2) { return new Or(pos, e1, e2); }
+
+    //: <exp8> ::= <exp7> => pass
+
+    //: <exp7> ::= <exp7> # `&& <exp6> =>
+    public Exp newAnd(Exp e1, int pos, Exp e2) { return new And(pos, e1, e2); }
+
+    //: <exp7> ::= <exp6> => pass
+
+    //: <exp6> ::= <exp6> # `!= <exp5> =>
+    public Exp newBangEquals(Exp e1, int pos, Exp e2) {
+        return new Not(pos, new Equals(pos, e1, e2));
+    }
+
+    //: <exp6> ::= <exp6> # `== <exp5> =>
+    public Exp newEquals(Exp e1, int pos, Exp e2) {
+        return new Equals(pos, e1, e2);
+    }
+
+    //: <exp6> ::= <exp5> => pass
+
+    //: <exp5> ::= <exp5> # `> <exp4> =>
+    public Exp newGreaterThan(Exp e1, int pos, Exp e2) { return new GreaterThan(pos, e1, e2); }
+
+    //: <exp5> ::= <exp5> # `< <exp4> =>
+    public Exp newLessThan(Exp e1, int pos, Exp e2) { return new LessThan(pos, e1, e2); }
+
+    //: <exp5> ::= <exp5> # `>= <exp4> =>
+    public Exp newGreaterEquals(Exp e1, int pos, Exp e2) {
+        return new Not(pos, new LessThan(pos, e1, e2));
+    }
+
+    //: <exp5> ::= <exp5> # `<= <exp4> =>
+	public Exp newLessEquals(Exp e1, int pos, Exp e2) {
+    	return new Not(pos, new GreaterThan(pos, e1, e2));
+	}
+
+	//: <exp5> ::= <exp5> # `instanceof ID =>
+    public Exp newInstanceOf(Exp e1, int pos, String var) {
+        return new InstanceOf(pos, e1, new IdentifierType(pos, var));
+    }
+
+	//: <exp5> ::= <exp4> => pass
+	
 	//: <exp4> ::= <exp4> # `+ <exp3> =>
 	public Exp newPlus(Exp e1, int pos, Exp e2) {
 		return new Plus(pos, e1, e2);
 	}
-	//: <exp4> ::= <exp4> # `- <exp3> =>
-	public Exp newMinus(Exp e1, int pos, Exp e2) {
-		return new Minus(pos, e1, e2);
-	}
+
+    //: <exp4> ::= <exp4> # `- <exp3> =>
+    public Exp newMinus(Exp e1, int pos, Exp e2) {
+        return new Minus(pos, e1, e2);
+    }
 	//: <exp4> ::= <exp3> => pass
 
 	//: <exp3> ::= <exp3> # `* <exp2> =>
 	public Exp newTimes(Exp e1, int pos, Exp e2) {
 		return new Times(pos, e1, e2);
 	}
+
+    //: <exp3> ::= <exp3> # `/ <exp2> =>
+	public Exp newDivide(Exp e1, int pos, Exp e2) { return new Divide(pos, e1, e2); }
+
+	//: <exp3> ::= <exp3> # `% <exp2> =>
+    public Exp newRemainder(Exp e1, int pos, Exp e2) { return new Remainder(pos, e1, e2); }
 	//: <exp3> ::= <exp2> => pass
 
 	//: <exp2> ::= <cast exp> => pass
@@ -171,24 +218,48 @@ public class MJGrammar
 		return new Minus(pos, new IntegerLiteral(pos, 0), e);
 	}
 
-	//: <unary exp> ::= # `+ <unary exp> =>
-	public Exp newUnaryPlus(int pos, Exp e) {
-		return new Plus(pos, new IntegerLiteral(pos, 0), e);
-	}
+    //: <unary exp> ::= # `+ <unary exp> =>
+    public Exp newUnaryPlus(int pos, Exp e) {
+        return new Plus(pos, new IntegerLiteral(pos, 0), e);
+    }
+
+    //: <unary exp> ::= # `! <unary exp> =>
+	public Exp newUnaryNot(int pos, Exp e) { return new Not(pos, e); }
+
 	//: <unary exp> ::= <exp1> => pass
 
 	//: <exp1> ::= # ID  =>
 	public Exp newIdentfierExp(int pos, String name) {
 		return new IdentifierExp(pos, name);
 	}
+
 	//: <exp1> ::= <exp1> !<empty bracket pair> # `[ <exp> `] =>
 	public Exp newArrayLookup(Exp e1, int pos, Exp e2) {
 		return new ArrayLookup(pos, e1, e2);
 	}
+
 	//: <exp1> ::= # INTLIT =>
 	public Exp newIntegerLiteral(int pos, int n) {
 		return new IntegerLiteral(pos, n);
 	}
+
+    //: <exp1> ::= # STRINGLIT =>
+    public Exp newStringLiteral(int pos, String str) { return new StringLiteral(pos, str); }
+
+    //: <exp1> ::= # CHARLIT =>
+    public Exp newCharLiteral(int pos, int charVal) { return new IntegerLiteral(pos, charVal); }
+
+    //: <exp1> ::= # `null =>
+    public Exp newNull(int pos) { return new Null(pos); }
+
+    //: <exp1> ::= # `true =>
+    public Exp newTrue(int pos) { return new True(pos); }
+
+    //: <exp1> ::= # `false =>
+    public Exp newFalse(int pos) { return new False(pos); }
+
+    //: <exp1> ::= # `this =>
+    public Exp newThis(int pos) {return new This(pos); }
 
 	//================================================================
 	// Lexical grammar for filtered language begins here: DO NOT MODIFY
@@ -262,7 +333,7 @@ public class MJGrammar
 	//: `transient ::= "#tt" ws*
 	//: `try ::= "#ty" ws*
 	//: `volatile ::= "#ve" ws*
-
+	
 	//: `! ::=  "!" ws* => void
 	//: `!= ::=  "@!" ws* => void
 	//: `% ::= "%" ws* => void
@@ -291,19 +362,19 @@ public class MJGrammar
 	//: `-- ::= "@-" ws* => void
 	//: `/ ::= "/" ws* => void
 
-
+	
 	//: ID ::= letter128 ws* => text
 	//: ID ::= letter idChar* idChar128 ws* => text
-
-	//: INTLIT ::= {"1".."9"} digit* digit128 ws* =>
+	
+	//: INTLIT ::= {"1".."9"} digit* digit128 ws* => 
 	public int convertToInt(char c, List<Character> mid, char last) {
 		return Integer.parseInt(""+c+mid+last);
 	}
-	//: INTLIT ::= digit128 ws* =>
+	//: INTLIT ::= digit128 ws* => 
 	public int convertToInt(char c) {
 		return Integer.parseInt(""+c);
 	}
-	//: INTLIT ::= "0" hexDigit* hexDigit128 ws* =>
+	//: INTLIT ::= "0" hexDigit* hexDigit128 ws* => 
 	public int convert16ToInt(char c, List<Character> mid, char last) {
 		return Integer.parseInt(""+c+mid+last, 16);
 	}
@@ -319,13 +390,13 @@ public class MJGrammar
 	public int charVal(char x, char val) {
 		return val;
 	}
-
+	
 	//: idChar ::= letter => pass
 	//: idChar ::= digit => pass
 	//: idChar ::= "_" => pass
 	//: idChar128 ::= letter128 => pass
 	//: idChar128 ::= digit128 => pass
-	//: idChar128 ::= {223} =>
+	//: idChar128 ::= {223} => 
 	public char underscore(char x) {
 		return '_';
 	}
@@ -333,3 +404,4 @@ public class MJGrammar
 	//: hexDigit128 ::= {176..185 225..230 193..198} => char sub128(char)
 
 }
+
