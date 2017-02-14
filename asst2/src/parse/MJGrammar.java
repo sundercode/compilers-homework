@@ -129,7 +129,7 @@ public class MJGrammar
 	/*
 	TODO:
 	2 - unary !, typecast unary (int) oldDouble
-	1 - String Literals, exp1.ID, this, false, true, null, (exp), new ID(), new type [exp]([])*
+	1 - String Literals, exp1.ID, (exp), new ID(), new type [exp]([])*
 	Call expressions - ID(expList?), super.ID(expList?), exp1.ID(expList?)
 	expression list - exp(,exp)*
 	*/
@@ -228,6 +228,8 @@ public class MJGrammar
 
 	//: <unary exp> ::= <exp1> => pass
 
+	//: <exp1> ::= <callExp> => pass
+
 	//: <exp1> ::= # ID  =>
 	public Exp newIdentfierExp(int pos, String name) {
 		return new IdentifierExp(pos, name);
@@ -260,6 +262,24 @@ public class MJGrammar
 
     //: <exp1> ::= # `this =>
     public Exp newThis(int pos) {return new This(pos); }
+
+    //: <exp1> ::= # <exp1> `. ID =>
+	public Exp newInstVarAccess( int pos, Exp e, String name) {
+    	return new InstVarAccess(pos, e, name);
+	}
+
+	//: <exp1> ::= # `new ID `( `) =>
+	public Exp newObject( int pos, IdentifierType type ) {
+    	return new NewObject(pos, type);
+	}
+
+	//: <exp1> ::= `new <type> `[ <exp> `] <emptybracketpair>* => void
+
+
+    /*	1 - (exp), new type [exp]([])*
+	Call expressions - ID(expList?), super.ID(expList?), exp1.ID(expList?)
+	expression list - exp(,exp)*
+	*/
 
 	//================================================================
 	// Lexical grammar for filtered language begins here: DO NOT MODIFY
