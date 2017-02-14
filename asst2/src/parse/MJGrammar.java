@@ -5,18 +5,18 @@ import syntaxtree.*;
 
 public class MJGrammar
 		implements wrangLR.runtime.MessageObject, wrangLR.runtime.FilePosObject {
-	
+
 	public static final boolean FILTER_GRAMMAR = true;
-	
+
 	// constructor
 	public MJGrammar(ErrorMsg em) {
 		errorMsg = em;
 		topObject = null;
 	}
-	
+
 	// error message object
 	private ErrorMsg errorMsg;
-	
+
 	// object to be returned by the parser
 	private Program topObject;
 
@@ -34,7 +34,7 @@ public class MJGrammar
 	public String filePosString(int pos) {
 		return errorMsg.lineAndChar(pos);
 	}
-	
+
 	// method that registers a newline
 	public void registerNewline(int pos) {
 		errorMsg.newline(pos-1);
@@ -44,7 +44,7 @@ public class MJGrammar
 	public Program parseResult() {
 		return topObject;
 	}
-	
+
 	//===============================================================
 	// start symbol
 	//===============================================================
@@ -53,7 +53,7 @@ public class MJGrammar
 	public void topLevel(Program obj) {
 		topObject = obj;
 	}
-	
+
 	//================================================================
 	// top-level program constructs ----> use syntaxtree folder to see all classes
 	//================================================================
@@ -100,7 +100,7 @@ public class MJGrammar
 	//================================================================
 
 	//: <stmt> ::= <assign> `; => pass
-	
+
 	//: <stmt> ::= # `{ <stmt>* `} =>
 	public Statement newBlock(int pos, List<Statement> sl) {
 		return new Block(pos, new StatementList(sl));
@@ -116,7 +116,7 @@ public class MJGrammar
 	public Statement localVarDecl(Type t, int pos, String name, Exp init) {
 		return new LocalDeclStatement(pos, new LocalVarDecl(pos, t, name, init));
 	}
-	
+
 	//need to add variable declarations
 	//STATEMENT declarations
 
@@ -126,15 +126,41 @@ public class MJGrammar
 
 	//low priority is exp8, gets higher as we go down
 
-	/*
-	TODO:
-	2 - unary !, typecast unary (int) oldDouble
-	1 - String Literals, exp1.ID, (exp), new ID(), new type [exp]([])*
-	Call expressions - ID(expList?), super.ID(expList?), exp1.ID(expList?)
-	expression list - exp(,exp)*
-	*/
-
 	//: <exp> ::= <exp8> => pass
+
+    //ExpLists
+    //: <expList> ::= # <exp> <expPartial>* =>
+    public ExpList newExpList(int pos, Exp e, List<Exp> exps) {
+        exps.add(e);
+        return new ExpList(exps);
+    }
+
+    //: <expPartial> ::= `, <exp> => pass
+
+    //callExps
+
+    //: <callExp> ::= # ID `( <expList>?`) =>
+    public Exp newThisCallExp(int pos, String name, ExpList exps) {
+        if (exps == null) {
+            exps = new ExpList();
+        }
+        return new Call(pos, new This(pos), name, exps);
+    }
+    //: <callExp> ::= <exp1> # `. ID `( <expList>? `) =>
+    public Exp newCallExp(Exp e, int pos, String name, ExpList exps ) {
+        if (exps == null) {
+            exps = new ExpList();
+        }
+        return new Call(pos, e, name, exps);
+    }
+
+    //: <callExp> ::= # `super `. ID `( <expList>? `) =>
+    public Exp newSuperCallExp(int pos, String name, ExpList exps) {
+        if (exps == null) {
+            exps = new ExpList();
+        }
+        return new Call(pos, new Super(pos), name, exps);
+    }
 
     //: <exp8> ::= <exp8> # `|| <exp7> =>
     public Exp newOr(Exp e1, int pos, Exp e2) { return new Or(pos, e1, e2); }
@@ -180,7 +206,7 @@ public class MJGrammar
     }
 
 	//: <exp5> ::= <exp4> => pass
-	
+
 	//: <exp4> ::= <exp4> # `+ <exp3> =>
 	public Exp newPlus(Exp e1, int pos, Exp e2) {
 		return new Plus(pos, e1, e2);
@@ -205,13 +231,14 @@ public class MJGrammar
 	//: <exp3> ::= <exp2> => pass
 
 	//: <exp2> ::= <cast exp> => pass
-	//: <exp2> ::= <unary exp> => pass
 
 	//: <cast exp> ::= # `( <type> `) <cast exp> =>
 	public Exp newCast(int pos, Type t, Exp e) {
 		return new Cast(pos, t, e);
 	}
 	//: <cast exp> ::= # `( <type> `) <exp1> => Exp newCast(int, Type, Exp)
+
+    //: <exp2> ::= <unary exp> => pass
 
 	//: <unary exp> ::= # `- <unary exp> =>
 	public Exp newUnaryMinus(int pos, Exp e) {
@@ -228,7 +255,9 @@ public class MJGrammar
 
 	//: <unary exp> ::= <exp1> => pass
 
-	//: <exp1> ::= <callExp> => pass
+    //: <exp1> ::= !<cast exp> `( <exp> `) => pass
+
+    //: <exp1> ::= <callExp> => pass
 
 	//: <exp1> ::= # ID  =>
 	public Exp newIdentfierExp(int pos, String name) {
@@ -263,17 +292,28 @@ public class MJGrammar
     //: <exp1> ::= # `this =>
     public Exp newThis(int pos) {return new This(pos); }
 
-    //: <exp1> ::= # <exp1> `. ID =>
+	//: <exp1> ::= # <exp1> `. ID =>
 	public Exp newInstVarAccess( int pos, Exp e, String name) {
-    	return new InstVarAccess(pos, e, name);
+		return new InstVarAccess(pos, e, name);
 	}
 
 	//: <exp1> ::= # `new ID `( `) =>
-	public Exp newObject( int pos, IdentifierType type ) {
-    	return new NewObject(pos, type);
+	public Exp newObject( int pos, String name ) {
+		return new NewObject(pos, new IdentifierType(pos, name));
 	}
 
-	//: <exp1> ::= `new <type> `[ <exp> `] <emptybracketpair>* => void
+	//: <exp1> ::= `new <type> !<empty bracket pair> # `[ <exp> `] <empty bracket pair>** =>
+	public Exp createArray(Type t, int pos, Exp e1, List<Object> objs) {
+	    //make the new array
+        ArrayType arr = new ArrayType(pos, t);
+
+        //for each object in the list, match the types
+        for (int i = 0; i < objs.size(); i++) {
+            arr = new ArrayType(pos, arr);
+        }
+        return new NewArray(pos, arr, e1);
+    }
+
 
 
     /*	1 - (exp), new type [exp]([])*
@@ -353,7 +393,7 @@ public class MJGrammar
 	//: `transient ::= "#tt" ws*
 	//: `try ::= "#ty" ws*
 	//: `volatile ::= "#ve" ws*
-	
+
 	//: `! ::=  "!" ws* => void
 	//: `!= ::=  "@!" ws* => void
 	//: `% ::= "%" ws* => void
@@ -382,19 +422,19 @@ public class MJGrammar
 	//: `-- ::= "@-" ws* => void
 	//: `/ ::= "/" ws* => void
 
-	
+
 	//: ID ::= letter128 ws* => text
 	//: ID ::= letter idChar* idChar128 ws* => text
-	
-	//: INTLIT ::= {"1".."9"} digit* digit128 ws* => 
+
+	//: INTLIT ::= {"1".."9"} digit* digit128 ws* =>
 	public int convertToInt(char c, List<Character> mid, char last) {
 		return Integer.parseInt(""+c+mid+last);
 	}
-	//: INTLIT ::= digit128 ws* => 
+	//: INTLIT ::= digit128 ws* =>
 	public int convertToInt(char c) {
 		return Integer.parseInt(""+c);
 	}
-	//: INTLIT ::= "0" hexDigit* hexDigit128 ws* => 
+	//: INTLIT ::= "0" hexDigit* hexDigit128 ws* =>
 	public int convert16ToInt(char c, List<Character> mid, char last) {
 		return Integer.parseInt(""+c+mid+last, 16);
 	}
@@ -410,13 +450,13 @@ public class MJGrammar
 	public int charVal(char x, char val) {
 		return val;
 	}
-	
+
 	//: idChar ::= letter => pass
 	//: idChar ::= digit => pass
 	//: idChar ::= "_" => pass
 	//: idChar128 ::= letter128 => pass
 	//: idChar128 ::= digit128 => pass
-	//: idChar128 ::= {223} => 
+	//: idChar128 ::= {223} =>
 	public char underscore(char x) {
 		return '_';
 	}
@@ -424,4 +464,3 @@ public class MJGrammar
 	//: hexDigit128 ::= {176..185 225..230 193..198} => char sub128(char)
 
 }
-
