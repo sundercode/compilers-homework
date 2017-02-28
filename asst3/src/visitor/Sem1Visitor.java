@@ -32,15 +32,76 @@ public class Sem1Visitor extends ASTvisitor {
 		return globalSymTab;
 	}
 
+    public Object visitClassDecl(ClassDecl decl) {
+        //add the class to the table
+        addClass(globalSymTab, decl.name, decl);
+        //mark this class as the current
+        this.currentClass = decl;
+
+        //call the super visit
+        Object temp = super.visitClassDecl(decl);
+
+        //add in the method and inst var tables?
+
+        this.currentClass = null;
+        return temp;
+
+    }
+
+    //helper method to add a class to the table
+    //given a table, add the class decl
+    private void addClass(Hashtable<String, ClassDecl> table, String className, ClassDecl decl) {
+        //if we already see the classname throw an err
+        if (table.containsKey(className)){
+            errorMsg.error(decl.pos, "Error: There is already a class with this name");
+        }
+
+        //otherwise, insert this class into the table object
+        table.put(className, decl);
+    }
+
+    //overrides method in ASTvisitor --> do we need to do this for void?
+    public Object visitMethodDecl(MethodDecl m) {
+        //match up the method name with our current class
+        m.classDecl = this.currentClass;
+
+        //throw error if we've seen the method before
+        if (currentClass.methodTable.containsKey(m)) {
+            errorMsg.error(m.pos, "Error: duplicate method name in class");
+        }
+        currentClass.methodTable.put(m.name, m);
+
+        //since we dont want to override previous returned, give null
+        return null;
+    }
+
+    //overrides method in InhVisitor
+    public Object visitInstVarDecl(InstVarDecl i) {
+
+        //throw error if we've seen this guy before
+        if (currentClass.instVarTable.containsKey(i.name)) {
+            errorMsg.error(i.pos, "Error: duplicate inst var name in class");
+        }
+        currentClass.instVarTable.put(i.name, i);
+        return null;
+    }
+
+
+	//initialize the global symbol table, using a java Hashtable object
 	protected void initGlobalSymTab() {
 		ClassDecl classObjectDecl = createClass("Object", "");
 		ClassDecl classStringDecl = createClass("String", "Object");
 		ClassDecl classLibDecl = createClass("Lib", "Object");
 		ClassDecl classRunMainDecl = createClass("RunMain", "Object");
+
+		//init the data array and object array classes
 		ClassDecl classDataArrayDecl = createClass("_DataArray", "Object");
 		ClassDecl classObjectArrayDecl = createClass("_ObjectArray", "Object");
-		
+
+		//fill in method declarations for object type
 		addDummyMethod(classObjectDecl, "equals", "boolean", new String[]{"Object"});
+
+		//fill in methods for our Lib classes
 	    addDummyMethod(classLibDecl, "readLine", "String", new String[]{});
 	    addDummyMethod(classLibDecl, "readInt", "int", new String[]{});
 	    addDummyMethod(classLibDecl, "readChar", "int", new String[]{});
@@ -49,8 +110,10 @@ public class Sem1Visitor extends ASTvisitor {
 		addDummyMethod(classLibDecl, "printInt", "void", new String[]{"int"});
 		addDummyMethod(classLibDecl, "intToString", "String",
 				new String[]{"int"});
-		addDummyMethod(classLibDecl, "intToChar", "String",
+		addDummyMethod(classLibDecl,"intToChar", "String",
 				new String[]{"int"});
+
+		//fill in our string methods
 		addDummyMethod(classStringDecl, "equals", "boolean", new String[]{"Object"});
 		addDummyMethod(classStringDecl, "concat", "String",
 				new String[]{"String"});
@@ -62,6 +125,7 @@ public class Sem1Visitor extends ASTvisitor {
 		addDummyMethod(classStringDecl, "compareTo", "int",
 				new String[]{"String"});
 
+		//tell our visitor to go find these class declarations, and put them in the table
 		this.visitClassDecl(classObjectDecl);
 		this.visitClassDecl(classLibDecl);
 		this.visitClassDecl(classStringDecl);
@@ -86,11 +150,15 @@ public class Sem1Visitor extends ASTvisitor {
 		s3.visitClassDecl(classObjectArrayDecl);
 		
 	}
-	
+
+
+	//this method creates a class for the given name and the super name if it extends from anything
 	protected static ClassDecl createClass(String name, String superName) {
 		return new ClassDecl(-1, name, superName, new DeclList());
 	}
- 	
+
+
+	//this method should add the corrct class declaration, method name, etc.
 	protected static void addDummyMethod(ClassDecl dec, String methName,
 				String rtnTypeName, String[] parmTypeNames) {
 		VarDeclList parmDecls = new VarDeclList();

@@ -24,6 +24,62 @@ public class Sem2Visitor extends ASTvisitor {
 	private void initInstanceVars(Hashtable<String,ClassDecl> globalTab) {
 		globalSymTab = globalTab;
 	}
+
+	//override visitProgram
+    //call findCycles in visitProgram
+    public Object visitProgram(Program p) {
+	    //set our temporary class
+	    Object temp = super.visitProgram(p);
+
+	    //throw err if we see String or RunMain
+        if (!globalSymTab.get("String").subclasses.isEmpty()) {
+            errorMsg.error(p.pos, "Cannot have String as superclass");
+        }
+        if (!globalSymTab.get("RunMain").subclasses.isEmpty()) {
+            errorMsg.error(p.pos, "Cannot have RunMain as superclass");
+        }
+
+        //check for cycles in all of the program's class decls
+        for(ClassDecl decl : p.classDecls) {
+            findCycles(decl.superLink , decl.name, globalSymTab.size() -1  );
+        }
+
+        return temp;
+    }
+
+    //create helper method to find circularities
+    private void findCycles(ClassDecl decl, String className, int numClasses){
+        if (decl == null) {
+            return;
+        }
+        //base case: if numClasses is 0 and we see the name, its a cycle, throw error
+        else if(numClasses == 0 || decl.name.equals(className)) {
+            errorMsg.error(decl.pos, "Circular reference found: " + decl.name);
+        }
+        else { //recursive case, call findCycles on the remaining links
+            findCycles(decl, className, numClasses - 1);
+        }
+    }
+
+    //override visitClassDecl again, this time putting in links
+    @Override
+    public Object visitClassDecl(ClassDecl decl) {
+        //look up the superclass name int he GST
+        if (decl.superName == null || decl.superName.equals("")) {
+            return null;
+        }
+        //throw an error if it is String or RunMain
+        if (!globalSymTab.containsKey(decl.superName)) {
+            errorMsg.error(decl.pos, "Undefined class declaration.");
+        }
+        //add the class to the list of subclasses from the GST
+        else {
+            decl.superLink = globalSymTab.get(decl.superName);
+            decl.superLink.subclasses.addElement(decl);
+        }
+        return null;
+    }
+
 	
 }
 
