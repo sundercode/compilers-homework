@@ -27,6 +27,7 @@ public class Sem2Visitor extends ASTvisitor {
 
 	//override visitProgram
     //call findCycles in visitProgram
+    @Override
     public Object visitProgram(Program p) {
 	    //set our temporary class
 	    Object temp = super.visitProgram(p);
@@ -49,6 +50,7 @@ public class Sem2Visitor extends ASTvisitor {
 
     //create helper method to find circularities
     private void findCycles(ClassDecl decl, String className, int numClasses){
+	    //base case: our decl is null, return and break out of this method
         if (decl == null) {
             return;
         }
@@ -57,7 +59,7 @@ public class Sem2Visitor extends ASTvisitor {
             errorMsg.error(decl.pos, "Circular reference found: " + decl.name);
         }
         else { //recursive case, call findCycles on the remaining links
-            findCycles(decl, className, numClasses - 1);
+            findCycles(decl.superLink, className, numClasses - 1);
         }
     }
 
@@ -68,7 +70,8 @@ public class Sem2Visitor extends ASTvisitor {
         if (decl.superName == null || decl.superName.equals("")) {
             return null;
         }
-        //throw an error if it is String or RunMain
+        //throw an error if there is no super name
+
         if (!globalSymTab.containsKey(decl.superName)) {
             errorMsg.error(decl.pos, "Undefined class declaration.");
         }
