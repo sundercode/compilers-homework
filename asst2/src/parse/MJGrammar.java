@@ -3,20 +3,22 @@ import java.util.List;
 import errorMsg.*;
 import syntaxtree.*;
 
+import javax.swing.plaf.nimbus.State;
+
 public class MJGrammar
 		implements wrangLR.runtime.MessageObject, wrangLR.runtime.FilePosObject {
-
+	
 	public static final boolean FILTER_GRAMMAR = true;
-
+	
 	// constructor
 	public MJGrammar(ErrorMsg em) {
 		errorMsg = em;
 		topObject = null;
 	}
-
+	
 	// error message object
 	private ErrorMsg errorMsg;
-
+	
 	// object to be returned by the parser
 	private Program topObject;
 
@@ -34,7 +36,7 @@ public class MJGrammar
 	public String filePosString(int pos) {
 		return errorMsg.lineAndChar(pos);
 	}
-
+	
 	// method that registers a newline
 	public void registerNewline(int pos) {
 		errorMsg.newline(pos-1);
@@ -44,7 +46,7 @@ public class MJGrammar
 	public Program parseResult() {
 		return topObject;
 	}
-
+	
 	//===============================================================
 	// start symbol
 	//===============================================================
@@ -53,7 +55,7 @@ public class MJGrammar
 	public void topLevel(Program obj) {
 		topObject = obj;
 	}
-
+	
 	//================================================================
 	// top-level program constructs ----> use syntaxtree folder to see all classes
 	//================================================================
@@ -63,18 +65,52 @@ public class MJGrammar
 		return new Program(pos, new ClassDeclList(vec));
 	}
 
-	//: <class decl> ::= `class # ID `{ <decl in class>* `} =>
-	public ClassDecl createClassDecl(int pos, String name, List<Decl> vec) {
-		return new ClassDecl(pos, name, "Object", new DeclList(vec));
+	//: <class decl> ::= `class # ID <extends ID>? `{ <decl in class>* `} =>
+	public ClassDecl createClassDecl(int pos, String name, String ext, List<Decl> vec) {
+	    if (ext == null) {
+	        //make object the extended class
+            return new ClassDecl(pos, name, "Object", new DeclList(vec));
+        }
+        //if the extends part is not null, we give it the class name it extends from
+		return new ClassDecl(pos,name, ext, new DeclList(vec));
 	}
 
+	//EXTENDS and OBJECT implicit tree nodes
+    //: <extends ID> ::= `extends ID => pass
+
+    //: <decl in class> ::= <inst var decl> => pass
 	//: <decl in class> ::= <method decl> => pass
 
-	//: <method decl> ::= `public `void # ID `( `) `{ <stmt>* `} =>
+    //================================================================
+    // Method Declaration
+    //================================================================
+
+	//: <method decl> ::= `public `void # ID `( `) `{ <stmtDecl>* `} =>
 	public Decl createMethodDeclVoid(int pos, String name, List<Statement> stmts) {
 		return new MethodDeclVoid(pos, name, new VarDeclList(new VarDeclList()),
 				new StatementList(stmts));
 	}
+
+	//: <method decl> ::= `public `void # ID <formalList> `{ <stmtDecl>* `} =>
+    public Decl createMethodDeclVoidParams(int pos, String name, VarDeclList formalLst,
+                                           List<Statement> stmtLst) {
+	    return new MethodDeclVoid(pos, name, formalLst, new StatementList(stmtLst));
+    }
+
+    //: <method decl> ::= `public <type> # ID `( `) `{ <stmtDecl>* `return <exp>`; `} =>
+    public Decl createMethodDevlNonVoid(Type t, int pos, String name, List<Statement> stmtLst, Exp e) {
+	    return new MethodDeclNonVoid(pos, t, name, new VarDeclList(new VarDeclList()), new StatementList(stmtLst), e);
+    }
+
+	//: <method decl> ::= `public <type> # ID <formalList> `{ <stmtDecl>* `return <exp> `; `} =>
+    public Decl createMethodDeclParams(Type t, int pos, String name, VarDeclList formalLst,
+                                       List<Statement> stmtList, Exp e) {
+	    return new MethodDeclNonVoid(pos, t, name, formalLst, new StatementList(stmtList), e);
+    }
+
+    //================================================================
+    // Type Declaration
+    //================================================================
 
 	//: <type> ::= # `int =>
 	public Type intType(int pos) {
@@ -101,24 +137,161 @@ public class MJGrammar
 
 	//: <stmt> ::= <assign> `; => pass
 
-	//: <stmt> ::= # `{ <stmt>* `} =>
+    //: <stmt> ::= # <callExp> `; =>
+    public Statement createExpStmt(int pos, Exp cexp) {
+	    return new CallStatement(pos, (Call)cexp);
+    }
+
+    //: <stmt> ::= # `break `; =>
+    public Statement createBreak(int pos) {
+	    return new Break(pos);
+    }
+	
+	//: <stmt> ::= # `{ <stmtDecl>* `} =>
 	public Statement newBlock(int pos, List<Statement> sl) {
 		return new Block(pos, new StatementList(sl));
 	}
-	//: <stmt> ::= <local var decl> `; => pass
 
-	//: <assign> ::= <exp> # `= <exp> =>
-	public Statement assign(Exp lhs, int pos, Exp rhs) {
-		return new Assign(pos, lhs, rhs);
+	//: <stmtDecl> ::= <local var decl> `; => pass
+    //: <stmtDecl> ::= <stmt> => pass
+
+    //: <stmt> ::= # `; =>
+    public Statement emptyStatement(int pos) {
+        return new Block(pos, new StatementList());
+    }
+
+    //If statements
+    //: <stmt> ::= # `if `( <exp> `) <stmt> # `else <stmt> =>
+    public Statement newIfElse( int ifpos, Exp e, Statement st1, int epos, Statement st2) {
+        return new If(ifpos, e, st1, st2);
+    }
+
+    //: <stmt> ::= # `if `( <exp> `) <stmt> # !`else =>
+    public Statement newIfNoElse(int ifpos, Exp e, Statement st1, int epos) {
+	    //treat the no-else like a new block statement
+	    return new If(ifpos, e, st1, new Block(epos, new StatementList()));
+    }
+
+    //for loop
+    //: <stmt> ::= # `for `( <forLoop1>? `; <exp>? `; <forLoop2>? `) # <stmt> =>
+    public Statement newFor(int pos, Statement st1, Exp e, Statement st2, int pos2, Statement body) {
+
+	    //body of the loop
+        StatementList statements = new StatementList();
+        statements.add(body);
+
+        //second param
+        StatementList body2 = new StatementList();
+        //add all of the previous statements to be looked at in the innermost section
+        body2.addAll(statements);
+
+        Statement stmt2 = st2;
+        if( stmt2 == null) {
+            //make a new block representing the operation on the loop
+            stmt2 = new Block(pos, new StatementList());
+        }
+        body2.add(stmt2);
+
+        //implicit while block, goes in the body
+        StatementList whileBlock = new StatementList();
+
+        Exp exp = e;
+        if (e == null){
+            //always evaluate true if left blank
+            exp = new True(pos2);
+        }
+        whileBlock.add(new While(pos2, exp, new Block(pos2, body2)));
+
+        //first parameter goes in the block
+        StatementList param1 = new StatementList();
+        Statement stmt1 = st1;
+
+        if (st1 == null) {
+            stmt1 = new Block(pos, new StatementList());
+        }
+        param1.add(stmt1);
+        param1.addAll(whileBlock);
+
+        return new Block(pos, param1);
+    }
+
+    //for loop helpers
+    //: <forLoop1> ::= <local var decl> => pass
+    //: <forLoop1> ::= <assign> => pass
+
+    //: <forLoop1> ::= # <callExp> =>
+    public Statement forLoopInit(int pos, Exp e) {
+	    return new CallStatement(pos, (Call)e);
+    }
+
+    //: <forLoop2> ::= <assign> => pass
+    //: <forLoop2> ::= # <callExp> =>
+    public Statement callToStatement(int pos, Exp e) {
+	    return new CallStatement(pos, (Call)e);
+    }
+
+    //while statement
+    //: <stmt> ::= # `while `( <exp> `) <stmt> =>
+    public Statement newWhile(int pos, Exp e, Statement stbody) {
+	    return new While(pos, e, stbody);
+    }
+
+    //================================================================
+    // assignments
+    //================================================================
+
+    //: <assign> ::= <exp> # `= <exp> =>
+    public Statement assign(Exp lhs, int pos, Exp rhs) {
+        return new Assign(pos, lhs, rhs);
+    }
+
+    //: <assign> ::= # `++ ID =>
+    public Statement assignPrefixPlus(int pos, String name) {
+	    IdentifierExp ID = new IdentifierExp(pos, name);
+	    return new Assign(pos, ID, new Plus(pos, ID, new IntegerLiteral(pos, 1)));
 	}
 
-	//: <local var decl> ::= <type> # ID `= <exp> =>
-	public Statement localVarDecl(Type t, int pos, String name, Exp init) {
-		return new LocalDeclStatement(pos, new LocalVarDecl(pos, t, name, init));
-	}
+	//: <assign> ::= ID # `++ =>
+    public Statement assignPostPlus(String name, int pos) {
+	    IdentifierExp ID = new IdentifierExp(pos, name);
+	    return new Assign(pos, ID, new Plus(pos, ID, new IntegerLiteral(pos, 1)));
+    }
 
-	//need to add variable declarations
-	//STATEMENT declarations
+    //: <assign> ::= # `-- ID =>
+    public Statement assignPreMinus(int pos, String name) {
+	    IdentifierExp ID = new IdentifierExp(pos, name);
+	    return new Assign(pos, ID, new Minus(pos, ID, new IntegerLiteral(pos, 1)));
+    }
+
+    //: <assign> ::= ID # `-- =>
+    public Statement assignPostMinus(String name, int pos) {
+	    IdentifierExp ID = new IdentifierExp(pos, name);
+        return new Assign(pos, ID, new Minus(pos, ID, new IntegerLiteral(pos, 1)));
+    }
+
+    //: <local var decl> ::= <type> # ID `= <exp> =>
+    public Statement localVarDecl(Type t, int pos, String name, Exp init) {
+        return new LocalDeclStatement(pos, new LocalVarDecl(pos, t, name, init));
+    }
+
+    //: <inst var decl> ::= <type> # ID `; =>
+    public Decl instVarDecl(Type t, int pos, String name) {
+	    return new InstVarDecl(pos, t, name);
+    }
+
+    //: <formalList> ::= `( <type> # ID <paramList>* `) =>
+    public VarDeclList newFormalList(Type t, int pos, String name, List<VarDecl> params) {
+	    //add the right decls to our param list
+	    params.add(new FormalDecl(pos, t, name));
+
+	    return new VarDeclList(params);
+    }
+
+    //: <paramList> ::= `, <type> # ID =>
+    public VarDecl newParamList(Type t, int pos, String name) {
+	    return new FormalDecl(pos, t, name);
+    }
+
 
 	//================================================================
 	// expressions
@@ -138,7 +311,6 @@ public class MJGrammar
     //: <expPartial> ::= `, <exp> => pass
 
     //callExps
-
     //: <callExp> ::= # ID `( <expList>?`) =>
     public Exp newThisCallExp(int pos, String name, ExpList exps) {
         if (exps == null) {
@@ -206,7 +378,7 @@ public class MJGrammar
     }
 
 	//: <exp5> ::= <exp4> => pass
-
+	
 	//: <exp4> ::= <exp4> # `+ <exp3> =>
 	public Exp newPlus(Exp e1, int pos, Exp e2) {
 		return new Plus(pos, e1, e2);
@@ -315,12 +487,6 @@ public class MJGrammar
     }
 
 
-
-    /*	1 - (exp), new type [exp]([])*
-	Call expressions - ID(expList?), super.ID(expList?), exp1.ID(expList?)
-	expression list - exp(,exp)*
-	*/
-
 	//================================================================
 	// Lexical grammar for filtered language begins here: DO NOT MODIFY
 	// ANYTHING BELOW THIS, UNLESS YOU REPLACE IT WITH YOUR ENTIRE
@@ -393,7 +559,7 @@ public class MJGrammar
 	//: `transient ::= "#tt" ws*
 	//: `try ::= "#ty" ws*
 	//: `volatile ::= "#ve" ws*
-
+	
 	//: `! ::=  "!" ws* => void
 	//: `!= ::=  "@!" ws* => void
 	//: `% ::= "%" ws* => void
@@ -422,19 +588,19 @@ public class MJGrammar
 	//: `-- ::= "@-" ws* => void
 	//: `/ ::= "/" ws* => void
 
-
+	
 	//: ID ::= letter128 ws* => text
 	//: ID ::= letter idChar* idChar128 ws* => text
-
-	//: INTLIT ::= {"1".."9"} digit* digit128 ws* =>
+	
+	//: INTLIT ::= {"1".."9"} digit* digit128 ws* => 
 	public int convertToInt(char c, List<Character> mid, char last) {
 		return Integer.parseInt(""+c+mid+last);
 	}
-	//: INTLIT ::= digit128 ws* =>
+	//: INTLIT ::= digit128 ws* => 
 	public int convertToInt(char c) {
 		return Integer.parseInt(""+c);
 	}
-	//: INTLIT ::= "0" hexDigit* hexDigit128 ws* =>
+	//: INTLIT ::= "0" hexDigit* hexDigit128 ws* => 
 	public int convert16ToInt(char c, List<Character> mid, char last) {
 		return Integer.parseInt(""+c+mid+last, 16);
 	}
@@ -450,13 +616,13 @@ public class MJGrammar
 	public int charVal(char x, char val) {
 		return val;
 	}
-
+	
 	//: idChar ::= letter => pass
 	//: idChar ::= digit => pass
 	//: idChar ::= "_" => pass
 	//: idChar128 ::= letter128 => pass
 	//: idChar128 ::= digit128 => pass
-	//: idChar128 ::= {223} =>
+	//: idChar128 ::= {223} => 
 	public char underscore(char x) {
 		return '_';
 	}
@@ -464,3 +630,4 @@ public class MJGrammar
 	//: hexDigit128 ::= {176..185 225..230 193..198} => char sub128(char)
 
 }
+

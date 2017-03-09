@@ -7,11 +7,13 @@ class Main {
   /*/ this is another comment */
   /*   /* this is another comment */
   public void main() {
-    int b = 3;
+    int b = 12;
     String c = "This is my new string thing";
     int foo = 10%2;
-    boolean nn = (Object)(String)(Object)z;
-    boolean boop = true;
-    int k = -n;
+    boolean nn = foo.b;
+    boolean boop = false;
+    --b;
+    b--;
+    //this;
   }
 }
