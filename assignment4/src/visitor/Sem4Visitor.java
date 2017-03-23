@@ -40,6 +40,13 @@ public class Sem4Visitor extends ASTvisitor {
 	IdentifierType currentSuperclassType;
 	ErrorMsg errorMsg;
 	Hashtable<String,ClassDecl> globalSymTab;
+
+	//convenient class types
+	BooleanType theBoolType = new BooleanType(-1);
+	IntegerType theIntType = new IntegerType(-1);
+	NullType theNullType = new NullType(-1);
+	VoidType theVoidType = new VoidType(-1);
+	IdentifierType theStringType;
 	
 	
 	public Sem4Visitor(Hashtable<String,ClassDecl> globalSymTb, ErrorMsg e) {
@@ -86,34 +93,29 @@ public class Sem4Visitor extends ASTvisitor {
 		if (src == null || target == null) {
 			return false;
 		}
-
-		//print an incompatible message and return false if VoidType
-		if (src instanceof VoidType || target instanceof VoidType) {
+		//return false if VoidType
+		else if (src instanceof VoidType || target instanceof VoidType) {
 			errorMsg.error(pos, "Cannot assign to or from VoidType");
 			return false;
 		}
-
 		//if the types are == (using .equals) return true
-		if (src.equals(target)) {
+		else if (src.equals(target)) {
 			return true;
 		}
-
 		//if src is NullType, return true if the target is an identifierType or ArrayType
-		if (src instanceof NullType) {
+		else if (src instanceof NullType) {
 			if (target instanceof IdentifierType || target instanceof ArrayType) {
 				return true;
 			}
 		}
-
 		//if src is an ArrayType and target is IdentifierType with name Object, return true
-		if (src instanceof ArrayType && target instanceof IdentifierType) {
+		else if (src instanceof ArrayType && target instanceof IdentifierType) {
 		    if (((IdentifierType) target).name.equals("Object")) {
 		        return true;
             }
         }
-
 		//if src is an IDType, return true if target is a superclass (direct or indirect)
-        if (src instanceof IdentifierType) {
+        else if (src instanceof IdentifierType) {
 		    IdentifierType srcCast = (IdentifierType) src;
 		    IdentifierType targetCast = (IdentifierType) target;
 		    //use the helper method isSuperClass to check for links in the class
@@ -122,7 +124,9 @@ public class Sem4Visitor extends ASTvisitor {
             }
         }
         //return error message otherwise
-        errorMsg.error(pos, "Incompatible types on assignment.");
+        if (pos >= 0) {
+            errorMsg.error(pos, "Incompatible types on assignment.");
+        }
         return false;
 	}
 
@@ -137,21 +141,89 @@ public class Sem4Visitor extends ASTvisitor {
         }
     }
 
+	//checks whether t1, t2, can be compared using == or !=
 	private boolean matchTypesCompare(Type t1, Type t2, int pos) {
-		//checks whether t1, t2, can be compared using == or !=
 
 		//if either type is null, return false.
+		if (t1 == null || t2 == null) {
+			return false;
+		}
+		// call matchTypes Assign
+		if (matchTypesAssign(t1, t2, pos) || matchTypesAssign(t2, t1, -pos)) {
+			return true;
+		}
 
-		//otherwise, invoke matchTypesAssign() twice.
-
-			// once with t1 first,
-
-			// once with t2 first, negative pos (so no error msg)
-
-		//if either of the above returns true, return true.
-
-		//otherwise print an "incompatible" error (unless pos is negative) and return false
-		return true;
+		else {
+            if (pos >= 0) {
+                errorMsg.error(pos, "Incompatible types" + t1.toString() + " and " + t2.toString());
+            }
+            return false;
+		}
 	}
+
+	private InstVarDecl instVarLookup(String name, ClassDecl clas, int pos, String msg) {
+	    if (clas == null) {
+	        if (pos >= 0) errorMsg.error(pos, msg);
+	        return null;
+        }
+        else if (clas.instVarTable.containsKey(name)) {
+	        return clas.instVarTable.get(name);
+        }
+        else {
+	        return instVarLookup(name, clas.superLink, pos, msg);
+        }
+    }
+
+    private InstVarDecl instVarLookup(String name, Type t, int pos, String msg) {
+	    if (t == null) {
+	        return null;
+        }
+
+        else if (!(t instanceof IdentifierType)) {
+	        errorMsg.error(pos, msg);
+	        return null;
+        }
+        else {
+	        return instVarLookup(name, globalSymTab.get(((IdentifierType) t).name), pos, msg);
+        }
+    }
+
+    private MethodDecl methodLookup(String name, ClassDecl clas, int pos, String msg) {
+        if (clas == null) {
+            if (pos >= 0) errorMsg.error(pos, msg);
+            return null;
+        }
+        else if (clas.methodTable.containsKey(name)) {
+            return clas.methodTable.get(name);
+        }
+        else {
+            return methodLookup(name, clas.superLink, pos, msg);
+        }
+    }
+
+    private MethodDecl methodLookup(String name, Type t, int pos, String msg) {
+        if (t == null) {
+            return null;
+        }
+
+        else if (!(t instanceof IdentifierType)) {
+            errorMsg.error(pos, msg);
+            return null;
+        }
+        else {
+            return methodLookup(name, globalSymTab.get(((IdentifierType) t).name), pos, msg);
+        }
+    }
+
+    private Type returnTypeFor( MethodDecl md) {
+        if (md instanceof MethodDeclVoid) {
+            return theVoidType;
+        }
+        //we know md is non void now, so cast and return the rtnType
+        return ((MethodDeclNonVoid) md).rtnType;
+    }
+
+    /// BELOW THIS POINT WE ARE VISITING THE NODES IN THE AST AND ADDING THEIR TYPES ///
+
 }
 	
