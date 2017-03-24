@@ -223,29 +223,195 @@ public class Sem4Visitor extends ASTvisitor {
         return ((MethodDeclNonVoid) md).rtnType;
     }
 
-    /// BELOW THIS POINT WE ARE VISITING THE NODES IN THE AST AND ADDING THEIR TYPES ///
+	/// BELOW THIS POINT WE ARE VISITING THE NODES IN THE AST AND ADDING THEIR TYPES ///
 	@Override
-    public Object visitIntegerLiteral(IntegerLiteral n) {
-	    Object visitor = super.visitIntegerLiteral(n);
+	public Object visitIntegerLiteral(IntegerLiteral n) {
+		Object visitor = super.visitIntegerLiteral(n);
 
-	    n.type = theIntType;
+		n.type = theIntType;
+		return visitor;
+	}
+
+	@Override
+	public Object visitNull(Null n) {
+		Object visitor = super.visitNull(n);
+
+		n.type = theNullType;
+		return visitor;
+	}
+
+	@Override
+	public Object visitStringLiteral(StringLiteral n) {
+		Object visitor = super.visitStringLiteral(n);
+
+		n.type = theStringType;
+		return visitor;
+	}
+
+	@Override
+    public Object visitTrue(True n) {
+	    Object visitor = super.visitTrue(n);
+
+	    n.type = theBoolType;
 	    return visitor;
     }
 
     @Override
-    public Object visitNull(Null n) {
-	    Object visitor = super.visitNull(n);
+    public Object visitFalse(False n) {
+	    Object visitor = super.visitFalse(n);
 
-	    n.type = theNullType;
+	    n.type = theBoolType;
 	    return visitor;
     }
 
     @Override
-    public Object visitStringLiteral(StringLiteral n) {
-	    Object visitor = super.visitStringLiteral(n);
+    public Object visitIdentifierExp(IdentifierExp n) {
+	    Object visitor = super.visitIdentifierExp(n);
 
-	    n.type = theStringType;
+	    n.type = n.link.type;
 	    return visitor;
+    }
+
+    @Override
+    public Object visitThis(This n) {
+	    Object visitor = super.visitThis(n);
+
+	    n.type = currentClassType;
+	    return visitor;
+    }
+
+    @Override
+    public Object visitSuper(Super n){
+	    Object visitor = super.visitSuper(n);
+
+	    n.type = currentSuperclassType;
+	    return visitor;
+    }
+
+    @Override
+    public Object visitPlus(Plus n) {
+        Object visitor = super.visitPlus(n);
+
+        //check that both operands match exact types
+        matchTypesExact(n.left.type, theIntType, n.pos);
+        matchTypesExact(n.right.type, theIntType, n.pos);
+
+        n.type = theIntType;
+        return visitor;
+    }
+
+    @Override
+    public Object visitMinus(Minus n) {
+        Object visitor = super.visitMinus(n);
+
+        //check that both operands match exact types
+        matchTypesExact(n.left.type, theIntType, n.pos);
+        matchTypesExact(n.right.type, theIntType, n.pos);
+
+        n.type = theIntType;
+        return visitor;
+    }
+
+    @Override
+    public Object visitTimes(Times n) {
+        Object visitor = super.visitTimes(n);
+
+        //check that both operands match exact types
+        matchTypesExact(n.left.type, theIntType, n.pos);
+        matchTypesExact(n.right.type, theIntType, n.pos);
+
+        n.type = theIntType;
+        return visitor;
+    }
+
+    @Override
+    public Object visitDivide(Divide n) {
+        Object visitor = super.visitDivide(n);
+
+        //check that both operands match exact types
+        matchTypesExact(n.left.type, theIntType, n.pos);
+        matchTypesExact(n.right.type, theIntType, n.pos);
+
+        n.type = theIntType;
+        return visitor;
+    }
+
+    @Override
+    public Object visitRemainder(Remainder n) {
+        Object visitor = super.visitRemainder(n);
+
+        //check that both operands match exact types
+        matchTypesExact(n.left.type, theIntType, n.pos);
+        matchTypesExact(n.right.type, theIntType, n.pos);
+
+        n.type = theIntType;
+        return visitor;
+    }
+
+    @Override
+    public Object visitGreaterThan(GreaterThan n) {
+        Object visitor = super.visitGreaterThan(n);
+
+        matchTypesExact(n.left.type, theIntType, n.pos);
+        matchTypesExact(n.right.type, theIntType, n.pos);
+
+        n.type = theBoolType;
+        return visitor;
+    }
+
+    @Override
+    public Object visitLessThan(LessThan n) {
+        Object visitor = super.visitLessThan(n);
+
+        matchTypesExact(n.left.type, theIntType, n.pos);
+        matchTypesExact(n.right.type, theIntType, n.pos);
+
+        n.type = theBoolType;
+        return visitor;
+    }
+
+    @Override
+    public Object visitEquals(Equals n) {
+        Object visitor = super.visitEquals(n);
+
+        matchTypesCompare(n.left.type, theIntType, n.pos);
+        matchTypesCompare(n.right.type, theIntType, n.pos);
+
+        n.type = theBoolType;
+        return visitor;
+
+    }
+
+    @Override
+    public Object visitNot(Not n){
+        Object visitor = super.visitNot(n);
+
+        matchTypesExact(n.type, theBoolType, n.pos);
+
+        n.type = theBoolType;
+        return visitor;
+    }
+
+    @Override
+    public Object visitAnd(And n) {
+        Object visitor = super.visitAnd(n);
+
+        matchTypesExact(n.left.type, theBoolType, n.pos);
+        matchTypesExact(n.right.type, theBoolType, n.pos);
+
+        n.type = theBoolType;
+        return visitor;
+    }
+
+    @Override
+    public Object visitOr(Or n) {
+        Object visitor = super.visitOr(n);
+
+        matchTypesExact(n.left.type, theBoolType, n.pos);
+        matchTypesExact(n.right.type, theBoolType, n.pos);
+
+        n.type = theBoolType;
+        return visitor;
     }
 
 }
