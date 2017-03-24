@@ -224,6 +224,29 @@ public class Sem4Visitor extends ASTvisitor {
     }
 
     /// BELOW THIS POINT WE ARE VISITING THE NODES IN THE AST AND ADDING THEIR TYPES ///
+	@Override
+    public Object visitIntegerLiteral(IntegerLiteral n) {
+	    Object visitor = super.visitIntegerLiteral(n);
+
+	    n.type = theIntType;
+	    return visitor;
+    }
+
+    @Override
+    public Object visitNull(Null n) {
+	    Object visitor = super.visitNull(n);
+
+	    n.type = theNullType;
+	    return visitor;
+    }
+
+    @Override
+    public Object visitStringLiteral(StringLiteral n) {
+	    Object visitor = super.visitStringLiteral(n);
+
+	    n.type = theStringType;
+	    return visitor;
+    }
 
 }
 	
