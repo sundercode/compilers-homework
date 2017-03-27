@@ -1,5 +1,6 @@
 package visitor;
 
+import com.sun.org.apache.bcel.internal.generic.INSTANCEOF;
 import syntaxtree.*;
 
 import java.util.*;
@@ -412,6 +413,134 @@ public class Sem4Visitor extends ASTvisitor {
 
         n.type = theBoolType;
         return visitor;
+    }
+
+    @Override
+    public Object visitArrayLength(ArrayLength n) {
+
+        Object visitor = super.visitArrayLength(n);
+
+        //check that n.exp is not null, and is ArrayType
+        if (n.exp.type != null || !(n.exp.type instanceof ArrayType)){
+            errorMsg.error(n.pos, "ArrayType needed");
+        }
+
+        n.type = theIntType;
+        return visitor;
+    }
+
+    @Override
+    public Object visitArrayLookup(ArrayLookup n) {
+        Object visitor = super.visitArrayLookup(n);
+
+        //check idExp field is not null and exactly matches theIntType
+        matchTypesExact(n.idxExp.type, theIntType, n.pos);
+
+        if(n.arrExp.type != null || !(n.arrExp.type instanceof ArrayType)) {
+            errorMsg.error(n.pos, "ArrayLookup with invalid type");
+        }
+
+        n.type = n.arrExp.type;
+        return visitor;
+    }
+
+    @Override
+    public Object visitInstVarAccess(InstVarAccess n) {
+        Object visitor = super.visitInstVarAccess(n);
+
+        //if exp field is null return visitor
+        if (n.exp.type == null){
+            return visitor;
+        }
+
+        n.varDec = instVarLookup(n.varName,n.exp.type, n.pos, "Instance Variable" + n.varName + " not defined" );
+
+        if (n.varDec != null) {
+            n.type = n.varDec.type;
+        }
+
+        return visitor;
+    }
+
+    @Override
+    public Object visitCast(Cast n) {
+        Object visitor = super.visitCast(n);
+
+        //check assignment compatibility
+        boolean assign = matchTypesAssign(n.exp.type, n.castType, -1);
+
+        if (!assign) {
+            errorMsg.error(n.pos, "Cast expression" + n.castType + "not compatible with " + n.exp.type);
+        }
+
+        n.type = n.castType;
+        return visitor;
+    }
+
+    @Override
+    public Object visitInstanceOf(InstanceOf n) {
+        Object visitor = super.visitInstanceOf(n);
+
+        boolean assign = matchTypesAssign(n.exp.type, n.checkType, -1);
+        if (!assign) {
+            errorMsg.error(n.pos, "InstanceOf check with " + n.checkType+ " incompatible with "+ n.exp.type);
+        }
+
+        n.type = theBoolType;
+        return visitor;
+    }
+
+    @Override
+    public Object visitNewObject(NewObject n) {
+        Object visitor = super.visitNewObject(n);
+
+        n.type = n.objType;
+
+        return visitor;
+    }
+
+    @Override
+    public Object visitNewArray(NewArray n) {
+        Object visitor = super.visitNewArray(n);
+
+        boolean match = matchTypesExact(n.sizeExp.type, theIntType, n.pos);
+        if (!match) {
+            errorMsg.error(n.pos, "New Array size declaration type not an integer");
+        }
+
+        n.type = n.objType;
+        return visitor;
+    }
+
+    @Override
+    public Object visitCall(Call n) {
+        Object visitor = super.visitCall(n);
+
+        //return if obj type is null
+        if(n.obj.type == null) return visitor;
+
+        //set methodLink
+        n.methodLink = methodLookup(n.methName, n.obj.type, n.pos, "Method "+ n.methName+ " invalid");
+
+        //check # of parameters in the call matches formal # parameters
+        if(n.parms.size() != n.methodLink.formals.size()) {
+            errorMsg.error(n.pos, "Method call parameter length does not match");
+        }
+        else {
+            //check actual parameter in the call is assignment compatible w formal parameters
+            for (int i = 0; i < n.parms.size(); i++) {
+                matchTypesAssign(n.parms.get(i).type, n.methodLink.formals.get(i).type, n.pos);
+            }
+        }
+
+        //set type field to ne methods declared return type
+        if(n.methodLink instanceof MethodDeclVoid){
+            n.type = theVoidType;
+        } else {
+            n.type = ((MethodDeclNonVoid) n.methodLink).rtnType;
+        }
+        return visitor;
+
     }
 
 }
