@@ -193,6 +193,7 @@ public class Sem4Visitor extends ASTvisitor {
             if (pos >= 0) errorMsg.error(pos, msg);
             return null;
         }
+        //check if the method table contains the name we are looking for, get that method
         else if (clas.methodTable.containsKey(name)) {
             return clas.methodTable.get(name);
         }
@@ -419,7 +420,7 @@ public class Sem4Visitor extends ASTvisitor {
         Object visitor = super.visitArrayLength(n);
 
         //check that n.exp is not null, and is ArrayType
-        if (n.exp.type != null || !(n.exp.type instanceof ArrayType)){
+        if (n.exp.type == null || !(n.exp.type instanceof ArrayType)){
             errorMsg.error(n.pos, "ArrayType needed");
         }
 
@@ -434,7 +435,7 @@ public class Sem4Visitor extends ASTvisitor {
         //check idExp field is not null and exactly matches theIntType
         matchTypesExact(n.idxExp.type, theIntType, n.pos);
 
-        if(n.arrExp.type != null || !(n.arrExp.type instanceof ArrayType)) {
+        if(n.arrExp.type == null || !(n.arrExp.type instanceof ArrayType)) {
             errorMsg.error(n.pos, "ArrayLookup with invalid type");
         }
 
@@ -451,7 +452,7 @@ public class Sem4Visitor extends ASTvisitor {
             return visitor;
         }
 
-        n.varDec = instVarLookup(n.varName,n.exp.type, n.pos, "Instance Variable" + n.varName + " not defined" );
+        n.varDec = instVarLookup(n.varName,n.exp.type, n.pos, "Instance Variable " + n.varName + " not defined" );
 
         if (n.varDec != null) {
             n.type = n.varDec.type;
@@ -468,7 +469,7 @@ public class Sem4Visitor extends ASTvisitor {
         boolean assign = matchTypesAssign(n.exp.type, n.castType, -1);
 
         if (!assign) {
-            errorMsg.error(n.pos, "Cast expression" + n.castType + " not compatible with " + n.exp.type);
+            errorMsg.error(n.pos, "Cast expression " + n.castType + " not compatible with " + n.exp.type);
         }
 
         n.type = n.castType;
@@ -599,8 +600,8 @@ public class Sem4Visitor extends ASTvisitor {
     public Object visitMethodDeclVoid(MethodDeclVoid n) {
         Object visitor = super.visitMethodDeclVoid(n);
 
-        //check superclass method is also void, use a dummy method decl to check current class
-        MethodDecl md = methodLookup(n.name, currentClass.superLink, -1, "");
+        //check superclass method is also void
+        MethodDecl md = methodLookup(n.name, n.classDecl.superLink, -1, "");
         if (md != null) {
             if (md instanceof MethodDeclNonVoid) {
                 errorMsg.error(n.pos, "Method return type must match return type of method in Superclass");
@@ -608,7 +609,7 @@ public class Sem4Visitor extends ASTvisitor {
 
             //check # params match
             if (n.formals.size() != md.formals.size()){
-                errorMsg.error(n.pos, "Method must match same # of parameters as method in Superclass");
+                errorMsg.error(n.pos, "Method must match same # of parameters as "+ md.name);
             }
             else {
                 //check type of each param matches
@@ -623,35 +624,52 @@ public class Sem4Visitor extends ASTvisitor {
         return visitor;
     }
 
-//    @Override
-//    public Object visitMethodDeclNonVoid(MethodDeclNonVoid n) {
-//        Object visitor = super.visitMethodDeclNonVoid(n);
-//
-//        //check return exp is assign compatible w declared rtn type
-//        if (!matchTypesAssign(n.rtnExp.type, n.rtnType, n.pos)) {
-//            errorMsg.error(n.pos, "Return type for method "+ n.name+ " must be of type "+ n.rtnType);
-//        }
-//
-//        MethodDecl md = methodLookup(n.name, currentClass.superLink, -1, "");
-//        if(md != null){
-//            if(md instanceof MethodDeclVoid){
-//                errorMsg.error(n.pos, "Method return type must match return type of method in superclass");
-//            }
-//            if(n.formals.size() != md.formals.size()){
-//                errorMsg.error(n.pos, "Number of parameters in " + n.name + " does not match needed number of parameters");
-//            }
-//            else{
-//                for(int i = 0; i < n.formals.size(); i++){
-//                    if(!n.formals.get(i).type.equals(md.formals.get(i).type))
-//                        errorMsg.error(n.pos, "Formal parameter type " + n.formals.get(i).toString() + " does not match " + md.formals.get(i).toString());
-//                }
-//            }
-//
-//            if(md instanceof MethodDeclVoid || !(n.rtnType.equals(returnTypeFor(md)))){
-//                errorMsg.error(n.pos, "Method return type must match super method return type");
-//            }
-//            n.superMethod = md;
-//        }
-//        return visitor;
-//    }
+    @Override
+    public Object visitMethodDeclNonVoid(MethodDeclNonVoid n) {
+        Object visitor = super.visitMethodDeclNonVoid(n);
+
+        //check return exp is assign compatible w declared rtn type
+        if (!matchTypesAssign(n.rtnExp.type, n.rtnType, n.pos)) {
+            errorMsg.error(n.pos, "Return type for method "+ n.name+ " must be of type "+ n.rtnType);
+        }
+
+        MethodDecl md = methodLookup(n.name, n.classDecl.superLink, -1, "");
+        if(md != null){
+            if(md instanceof MethodDeclVoid){
+                errorMsg.error(n.pos, "Method return type must match return type of method in superclass");
+            }
+            if(n.formals.size() != md.formals.size()){
+                errorMsg.error(n.pos, "Method must match same # of parameters as "+ md.name);
+            }
+            else{
+                for(int i = 0; i < n.formals.size(); i++){
+                    if(!n.formals.get(i).type.equals(md.formals.get(i).type))
+                        errorMsg.error(n.pos, "Formal parameter type " + n.formals.get(i).toString() + " does not match " + md.formals.get(i).toString());
+                }
+            }
+
+            if(md instanceof MethodDeclVoid || !(n.rtnType.equals(returnTypeFor(md)))){
+                errorMsg.error(n.pos, "Method return type must match super method return type");
+            }
+            n.superMethod = md;
+        }
+        return visitor;
+    }
+
+    @Override
+    public Object visitClassDecl(ClassDecl n) {
+        currentClass = n;
+        //set current class type to new Id type that refers to this class
+        currentClassType = new IdentifierType(-1, n.name);
+        //set link field to refer back to this classDecl object
+        currentClassType.link = n;
+
+        //set the supertype
+        currentSuperclassType = new IdentifierType(-1, n.superName);
+        currentSuperclassType.link = n.superLink;
+
+        //traverse subnodes
+        Object visitor = super.visitClassDecl(n);
+        return visitor;
+    }
 }
