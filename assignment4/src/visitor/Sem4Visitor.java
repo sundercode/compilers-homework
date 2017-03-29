@@ -125,7 +125,7 @@ public class Sem4Visitor extends ASTvisitor {
         }
         //return error message otherwise
         if (pos >= 0) {
-            errorMsg.error(pos, "Incompatible types on assignment.");
+            errorMsg.error(pos, "Incompatible types on assignment: "+ src.toString()+ " and "+ target.toString());
         }
         return false;
 	}
@@ -306,8 +306,8 @@ public class Sem4Visitor extends ASTvisitor {
         Object visitor = super.visitMinus(n);
 
         //check that both operands match exact types
-        matchTypesExact(n.left.type, theIntType, n.pos);
-        matchTypesExact(n.right.type, theIntType, n.pos);
+        matchTypesExact(n.left.type, theIntType, n.left.pos);
+        matchTypesExact(n.right.type, theIntType, n.right.pos);
 
         n.type = theIntType;
         return visitor;
@@ -318,8 +318,8 @@ public class Sem4Visitor extends ASTvisitor {
         Object visitor = super.visitTimes(n);
 
         //check that both operands match exact types
-        matchTypesExact(n.left.type, theIntType, n.pos);
-        matchTypesExact(n.right.type, theIntType, n.pos);
+        matchTypesExact(n.left.type, theIntType, n.left.pos);
+        matchTypesExact(n.right.type, theIntType, n.right.pos);
 
         n.type = theIntType;
         return visitor;
@@ -330,8 +330,8 @@ public class Sem4Visitor extends ASTvisitor {
         Object visitor = super.visitDivide(n);
 
         //check that both operands match exact types
-        matchTypesExact(n.left.type, theIntType, n.pos);
-        matchTypesExact(n.right.type, theIntType, n.pos);
+        matchTypesExact(n.left.type, theIntType, n.left.pos);
+        matchTypesExact(n.right.type, theIntType, n.right.pos);
 
         n.type = theIntType;
         return visitor;
@@ -342,8 +342,8 @@ public class Sem4Visitor extends ASTvisitor {
         Object visitor = super.visitRemainder(n);
 
         //check that both operands match exact types
-        matchTypesExact(n.left.type, theIntType, n.pos);
-        matchTypesExact(n.right.type, theIntType, n.pos);
+        matchTypesExact(n.left.type, theIntType, n.left.pos);
+        matchTypesExact(n.right.type, theIntType, n.right.pos);
 
         n.type = theIntType;
         return visitor;
@@ -353,8 +353,8 @@ public class Sem4Visitor extends ASTvisitor {
     public Object visitGreaterThan(GreaterThan n) {
         Object visitor = super.visitGreaterThan(n);
 
-        matchTypesExact(n.left.type, theIntType, n.pos);
-        matchTypesExact(n.right.type, theIntType, n.pos);
+        matchTypesExact(n.left.type, theIntType, n.left.pos);
+        matchTypesExact(n.right.type, theIntType, n.right.pos);
 
         n.type = theBoolType;
         return visitor;
@@ -364,8 +364,8 @@ public class Sem4Visitor extends ASTvisitor {
     public Object visitLessThan(LessThan n) {
         Object visitor = super.visitLessThan(n);
 
-        matchTypesExact(n.left.type, theIntType, n.pos);
-        matchTypesExact(n.right.type, theIntType, n.pos);
+        matchTypesExact(n.left.type, theIntType, n.left.pos);
+        matchTypesExact(n.right.type, theIntType, n.right.pos);
 
         n.type = theBoolType;
         return visitor;
@@ -521,7 +521,7 @@ public class Sem4Visitor extends ASTvisitor {
 
         //check # of parameters in the call matches formal # parameters
         if(n.parms.size() != n.methodLink.formals.size()) {
-            errorMsg.error(n.pos, "Method call parameter length in " + n.methName + " does not match with formal declaration");
+            errorMsg.error(n.pos, "Method parameter length in " + n.methName + " does not match with formal declaration");
         }
         else {
             //check actual parameter in the call is assignment compatible w formal parameters
@@ -560,7 +560,7 @@ public class Sem4Visitor extends ASTvisitor {
         //check type of initialization exp
         boolean assign = matchTypesAssign(n.initExp.type, n.type, n.pos);
         if (!assign) {
-            errorMsg.error(n.pos, "Invalid variable assignment " + n.initExp.type+ " with "+ n.type);
+            errorMsg.error(n.pos, "Invalid local variable statement " + n.initExp.type+ " with "+ n.type);
         }
 
         return visitor;
@@ -669,7 +669,6 @@ public class Sem4Visitor extends ASTvisitor {
         currentSuperclassType.link = n.superLink;
 
         //traverse subnodes
-        Object visitor = super.visitClassDecl(n);
-        return visitor;
+        return super.visitClassDecl(n);
     }
 }
