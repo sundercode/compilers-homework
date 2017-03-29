@@ -609,7 +609,7 @@ public class Sem4Visitor extends ASTvisitor {
 
             //check # params match
             if (n.formals.size() != md.formals.size()){
-                errorMsg.error(n.pos, "Method must match same # of parameters as "+ md.name);
+                errorMsg.error(n.pos, "Method must match same # of parameters as method: " + md.name);
             }
             else {
                 //check type of each param matches
