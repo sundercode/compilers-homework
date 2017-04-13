@@ -166,7 +166,7 @@ public class CG3Visitor extends ASTvisitor {
 
         //if method is a library method,
         if (n.methodLink.pos < 0) {
-            code.emit(n, "jal" + n.methName + "_"+ n.methodLink.classDecl.name);
+            code.emit(n, "jal " + n.methName + "_"+ n.methodLink.classDecl.name);
         }
         else {
             code.emit(n, "jal fcn_"+n.methodLink.uniqueId+"_"+ n.methName);
@@ -224,9 +224,9 @@ public class CG3Visitor extends ASTvisitor {
         stackHeight = 0;
         n.mainStatement.accept(this); //code for the mainStatement
 
-        //emit dummy labels for CLASS_String and CLASS_Object
-        code.emit(n, ".CLASS_String");
-        code.emit(n, ".CLASS_Object");
+        //emit dummy labels for CLASS_String and CLASS_Object??
+        code.emit(n, "CLASS_String:");
+        code.emit(n, "CLASS_Object:");
 
         code.emit(n, "#exit program");
         code.emit(n, "li $v0, 10");
@@ -242,7 +242,7 @@ public class CG3Visitor extends ASTvisitor {
         return null;
     }
 
-    //visitMethodDeclVoid
+//    //visitMethodDeclVoid
     @Override
     public Object visitMethodDeclVoid(MethodDeclVoid md) {
         code.indent(md);
@@ -258,7 +258,7 @@ public class CG3Visitor extends ASTvisitor {
 
         stackHeight = 0;
 
-        //generate code for body (aka statements!)
+        //generate code for body (aka statements!) - localvardecls?
         for(Statement s : md.stmts){
             s.accept(this);
         }

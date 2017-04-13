@@ -1,97 +1,109 @@
- .data # Program at 1.1  
-  .byte 10 # StringLiteral at 6.12 
-  .byte 0 # StringLiteral at 6.12	 
-  .byte 0 # StringLiteral at 6.12	
-  .byte 0 # StringLiteral at 6.12   
-  .word CLASS_String # StringLiteral at 6.12   
-  .word 2 # StringLiteral at 6.12 		
-  .word -1 # StringLiteral at 6.12  
-strLit_16: # StringLiteral at 6.12	
-  # ENTER NODE # Program at 1.1	  
-  .text # Program at 1.1			
-  .globl main # Program at 1.1 		
-  main: # Program at 1.1 	 
-  #initialize registers, etc. # Program at 1.1 	 
-  jal vm_init # Program at 1.1 
-    # ENTER NODE # Call at 0.0	 	
-      # ENTER NODE # NewObject at 0.0	
-      subu $sp, $sp, 4 # NewObject at 0.0 		
-      sw $zero, ($sp) # NewObject at 0.0		 
-      # EXIT NODE # NewObject at 0.0  	
-    jal fcn_20_main # Call at 0.0  	
-    # EXIT NODE # Call at 0.0  
-  .CLASS_String # Program at 1.1 
-  .CLASS_Object # Program at 1.1 		
-  #exit program # Program at 1.1		 
-  li $v0, 10 # Program at 1.1 
-  syscall # Program at 1.1  
-    # ENTER NODE # LocalVarDecl at 3.7 	
-      # ENTER NODE # IntegerLiteral at 3.13  
-      subu $sp, $sp, 8 # IntegerLiteral at 3.13 		
-      sw $s5, 4($sp) # IntegerLiteral at 3.13 	 
-      li $t0, 123 # IntegerLiteral at 3.13 	
-      sw $t0, ($sp) # IntegerLiteral at 3.13  
-      # EXIT NODE # IntegerLiteral at 3.13	 
-    # EXIT NODE # LocalVarDecl at 3.7   
-    # ENTER NODE # LocalVarDecl at 4.7 	
-      # ENTER NODE # Plus at 4.16	
-        # ENTER NODE # IdentifierExp at 4.13	 
-        lw $t0, 0($sp) # IdentifierExp at 4.13 		
-        subu $sp, $sp, 8 # IdentifierExp at 4.13 		
-        sw $s5, 4($sp) # IdentifierExp at 4.13  	
-        sw $t0, ($sp) # IdentifierExp at 4.13		
-        # EXIT NODE # IdentifierExp at 4.13	 	
-        # ENTER NODE # IntegerLiteral at 4.17  
-        subu $sp, $sp, 8 # IntegerLiteral at 4.17		 
-        sw $s5, 4($sp) # IntegerLiteral at 4.17	 
-        li $t0, 30 # IntegerLiteral at 4.17 
-        sw $t0, ($sp) # IntegerLiteral at 4.17	  
-        # EXIT NODE # IntegerLiteral at 4.17   
-      lw $t0, ($sp) # Plus at 4.16	 
-      lw $t1, 8($sp) # Plus at 4.16 		
-      addu $t0, $t0, $t1 # Plus at 4.16  
-      addu $sp, $sp, 8 # Plus at 4.16	 
-      sw $t0, ($sp) # Plus at 4.16	
-      # EXIT NODE # Plus at 4.16		 
-    # EXIT NODE # LocalVarDecl at 4.7	 	
-    # ENTER NODE # Call at 5.3	 
-      # ENTER NODE # This at 5.3   
-      subu $sp, $sp, 4 # This at 5.3		
-      sw $s2, ($sp) # This at 5.3	
-      # EXIT NODE # This at 5.3 
-      # ENTER NODE # Plus at 5.15			
-        # ENTER NODE # IdentifierExp at 5.12   
-        lw $t0, 4($sp) # IdentifierExp at 5.12	
-        subu $sp, $sp, 8 # IdentifierExp at 5.12   
-        sw $s5, 4($sp) # IdentifierExp at 5.12	  
-        sw $t0, ($sp) # IdentifierExp at 5.12 	 
-        # EXIT NODE # IdentifierExp at 5.12	 	
-        # ENTER NODE # IntegerLiteral at 5.16  	
-        subu $sp, $sp, 8 # IntegerLiteral at 5.16  	
-        sw $s5, 4($sp) # IntegerLiteral at 5.16 	 
-        li $t0, 6 # IntegerLiteral at 5.16	 	
-        sw $t0, ($sp) # IntegerLiteral at 5.16		
-        # EXIT NODE # IntegerLiteral at 5.16			
-      lw $t0, ($sp) # Plus at 5.15  	
-      lw $t1, 8($sp) # Plus at 5.15	  
-      addu $t0, $t0, $t1 # Plus at 5.15 	
-      addu $sp, $sp, 8 # Plus at 5.15 
-      sw $t0, ($sp) # Plus at 5.15 	 
-      # EXIT NODE # Plus at 5.15 	
-    jalprintInt_Lib # Call at 5.3		
-    # EXIT NODE # Call at 5.3	  
-    # ENTER NODE # Call at 6.3   
-      # ENTER NODE # This at 6.3		 
-      subu $sp, $sp, 4 # This at 6.3  	
-      sw $s2, ($sp) # This at 6.3	  
-      # EXIT NODE # This at 6.3 	
-      # ENTER NODE # StringLiteral at 6.12		 
-      subu $sp, $sp, 4 # StringLiteral at 6.12	
-      la $t0, strLit_16 # StringLiteral at 6.12	 
-      sw $t0, ($sp) # StringLiteral at 6.12 	
-      # EXIT NODE # StringLiteral at 6.12   
-    jalprintStr_Lib # Call at 6.3			
-    # EXIT NODE # Call at 6.3 
+ .data # Program at 1.1	 	
+  .byte 10 # StringLiteral at 6.12  	
+  .byte 0 # StringLiteral at 6.12 
+  .byte 0 # StringLiteral at 6.12 
+  .byte 0 # StringLiteral at 6.12		 
+  .word CLASS_String # StringLiteral at 6.12			
+  .word 2 # StringLiteral at 6.12		 
+  .word -1 # StringLiteral at 6.12 
+strLit_16: # StringLiteral at 6.12	 
+  # ENTER NODE # Program at 1.1   
+  .text # Program at 1.1	
+  .globl main # Program at 1.1   
+  main: # Program at 1.1	
+  #initialize registers, etc. # Program at 1.1  
+  jal vm_init # Program at 1.1  	
+    # ENTER NODE # Call at 0.0 	 
+      # ENTER NODE # NewObject at 0.0 	 
+      subu $sp, $sp, 4 # NewObject at 0.0		 
+      sw $zero, ($sp) # NewObject at 0.0 		
+      # EXIT NODE # NewObject at 0.0	 
+    jal fcn_20_main # Call at 0.0  
+    # EXIT NODE # Call at 0.0 	 
+  CLASS_String: # Program at 1.1 	
+  CLASS_Object: # Program at 1.1	  
+  #exit program # Program at 1.1   
+  li $v0, 10 # Program at 1.1	 	
+  syscall # Program at 1.1 		
+    # ENTER NODE # MethodDeclVoid at 2.14   
+    .globl fcn_20_main # MethodDeclVoid at 2.14		
+    fcn_20_main: # MethodDeclVoid at 2.14	 	
+    subu $sp,$sp,4 # MethodDeclVoid at 2.14  
+    sw $s2,($sp) # MethodDeclVoid at 2.14 	 
+    lw $s2, 0($sp) # MethodDeclVoid at 2.14	  
+    sw $ra, 0($sp) # MethodDeclVoid at 2.14	
+      # ENTER NODE # LocalVarDecl at 3.7 		
+        # ENTER NODE # IntegerLiteral at 3.13	
+        subu $sp, $sp, 8 # IntegerLiteral at 3.13	 
+        sw $s5, 4($sp) # IntegerLiteral at 3.13	
+        li $t0, 123 # IntegerLiteral at 3.13	 
+        sw $t0, ($sp) # IntegerLiteral at 3.13 
+        # EXIT NODE # IntegerLiteral at 3.13		
+      # EXIT NODE # LocalVarDecl at 3.7	 	
+      # ENTER NODE # LocalVarDecl at 4.7			
+        # ENTER NODE # Plus at 4.16	 	
+          # ENTER NODE # IdentifierExp at 4.13  	
+          lw $t0, 0($sp) # IdentifierExp at 4.13		
+          subu $sp, $sp, 8 # IdentifierExp at 4.13		 
+          sw $s5, 4($sp) # IdentifierExp at 4.13			
+          sw $t0, ($sp) # IdentifierExp at 4.13			
+          # EXIT NODE # IdentifierExp at 4.13	
+          # ENTER NODE # IntegerLiteral at 4.17			
+          subu $sp, $sp, 8 # IntegerLiteral at 4.17  
+          sw $s5, 4($sp) # IntegerLiteral at 4.17			
+          li $t0, 30 # IntegerLiteral at 4.17 	 
+          sw $t0, ($sp) # IntegerLiteral at 4.17  
+          # EXIT NODE # IntegerLiteral at 4.17  
+        lw $t0, ($sp) # Plus at 4.16	
+        lw $t1, 8($sp) # Plus at 4.16  
+        addu $t0, $t0, $t1 # Plus at 4.16   
+        addu $sp, $sp, 8 # Plus at 4.16   
+        sw $t0, ($sp) # Plus at 4.16	
+        # EXIT NODE # Plus at 4.16	
+      # EXIT NODE # LocalVarDecl at 4.7		 
+      # ENTER NODE # Call at 5.3  
+        # ENTER NODE # This at 5.3   
+        subu $sp, $sp, 4 # This at 5.3		 
+        sw $s2, ($sp) # This at 5.3  
+        # EXIT NODE # This at 5.3		 
+        # ENTER NODE # Plus at 5.15 	
+          # ENTER NODE # IdentifierExp at 5.12		
+          lw $t0, 4($sp) # IdentifierExp at 5.12 	
+          subu $sp, $sp, 8 # IdentifierExp at 5.12	  
+          sw $s5, 4($sp) # IdentifierExp at 5.12	
+          sw $t0, ($sp) # IdentifierExp at 5.12 	 
+          # EXIT NODE # IdentifierExp at 5.12 		
+          # ENTER NODE # IntegerLiteral at 5.16	  
+          subu $sp, $sp, 8 # IntegerLiteral at 5.16	
+          sw $s5, 4($sp) # IntegerLiteral at 5.16		
+          li $t0, 6 # IntegerLiteral at 5.16   
+          sw $t0, ($sp) # IntegerLiteral at 5.16	
+          # EXIT NODE # IntegerLiteral at 5.16  	
+        lw $t0, ($sp) # Plus at 5.15	
+        lw $t1, 8($sp) # Plus at 5.15 	
+        addu $t0, $t0, $t1 # Plus at 5.15	  
+        addu $sp, $sp, 8 # Plus at 5.15		 
+        sw $t0, ($sp) # Plus at 5.15 	
+        # EXIT NODE # Plus at 5.15   
+      jal printInt_Lib # Call at 5.3  	
+      # EXIT NODE # Call at 5.3	
+      # ENTER NODE # Call at 6.3  
+        # ENTER NODE # This at 6.3			
+        subu $sp, $sp, 4 # This at 6.3		 
+        sw $s2, ($sp) # This at 6.3  
+        # EXIT NODE # This at 6.3	 	
+        # ENTER NODE # StringLiteral at 6.12	
+        subu $sp, $sp, 4 # StringLiteral at 6.12  	
+        la $t0, strLit_16 # StringLiteral at 6.12  
+        sw $t0, ($sp) # StringLiteral at 6.12  
+        # EXIT NODE # StringLiteral at 6.12 	 
+      jal printStr_Lib # Call at 6.3	
+      # EXIT NODE # Call at 6.3  
+    lw $ra,16($sp) # MethodDeclVoid at 2.14		 
+    lw $s2,16($sp) # MethodDeclVoid at 2.14	  
+    addu $sp,$sp,24 # MethodDeclVoid at 2.14 	 
+    jr $ra # MethodDeclVoid at 2.14  	
+    # EXIT NODE # MethodDeclVoid at 2.14	
 ##############################################################
 # MiniJava/UP library for MIPS/Spim -- version that assumes
 #    one-word boolean on stack
