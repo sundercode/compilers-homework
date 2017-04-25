@@ -145,7 +145,7 @@ public class CG3Visitor extends ASTvisitor {
 
         //just push a zero onto the stack for now
         code.emit(n, "subu $sp, $sp, 4");
-        stackHeight += 4; //do we need to increment the stack?
+        stackHeight += 4;
         code.emit(n, "sw $zero, ($sp)");
 
         code.unindent(n);
@@ -224,7 +224,7 @@ public class CG3Visitor extends ASTvisitor {
         stackHeight = 0;
         n.mainStatement.accept(this); //code for the mainStatement
 
-        //emit dummy labels for CLASS_String and CLASS_Object??
+        //emit dummy labels for CLASS_String and CLASS_Object
         code.emit(n, "CLASS_String:");
         code.emit(n, "CLASS_Object:");
 
@@ -242,7 +242,7 @@ public class CG3Visitor extends ASTvisitor {
         return null;
     }
 
-//    //visitMethodDeclVoid
+    //visitMethodDeclVoid
     @Override
     public Object visitMethodDeclVoid(MethodDeclVoid md) {
         code.indent(md);
@@ -263,14 +263,15 @@ public class CG3Visitor extends ASTvisitor {
             s.accept(this);
         }
 
+        //space for any local vars created
         int returnAddress = stackHeight + stackTopRel;
         int thisPointer = stackHeight + md.thisPtrOffset;
         code.emit(md, "lw $ra,"+returnAddress+"($sp)");
         code.emit(md, "lw $s2,"+thisPointer+"($sp)");
 
-        //right now, we are just popping off two words from the stack,
+        //right now, we are just popping off two words from the stack
         int toPop = stackHeight + 8;
-        //and space for any local vars created
+
 
         code.emit(md, "addu $sp,$sp,"+ toPop);
         code.emit(md, "jr $ra");
