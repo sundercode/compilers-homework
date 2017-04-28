@@ -54,33 +54,49 @@ public class CG1Visitor extends ASTvisitor {
 	}
 
 	///////////////// Helper Methods /////////////////////////////
+
+	//computes the number of total methods that cd has seen.
+    //TODO: this method needs to be finished!!
 	public int numMethods(ClassDecl cd) {
-		//computes the number of total methods that cd has seen.
+
+	    if (cd == null) {
+	        return 0;
+        }
+
         int totalMethods = 0;
 
-        totalMethods = cd.methodTable.size();
+        totalMethods = cd.methodTable.size();//methods on current class
 
 		//recursively finds the number of methods for its super class
-        numMethods(cd.superLink);
+        int superClassMethods = numMethods(cd.superLink);
 
-        //then adds in the number of methods defined in cd that do not override
-        // an existing method
-
+        //then adds in the number of methods defined in cd that do not override existing in super
+        for (String name : cd.superLink.methodTable.keySet()) {
+            //see if its not in our current class table
+            if (!(cd.methodTable.containsKey(name))) {
+                //increment the totalMethods
+                totalMethods ++;
+            }
+        }
         return totalMethods;
     }
 
+	//stores the method's label in the currentMethodTable vector -- based on vtable offset
 	public void registerMethodInTable( MethodDecl md) {
-		//stores the method's label in the currentMethodTable vector -- based on vtable offset
 
-		//may require enlarging the currentMEthodTable, so that it has room for new entry
-        if(md.pos < 0)
+		//may require enlarging the currentMethodTable, so that it has room for new entry
+        if(md.pos < 0) {
             currentMethodTable.add(md.vtableOffset - 1, md.name + "_" + md.classDecl.name);
-        else
+        }
+        else{
             currentMethodTable.add(md.vtableOffset - 1, "fcn_" + md.uniqueId + "_" + md.name);
+        }
+
+        //TODO: grow the currentMethodTable?? please check this
 	}
 
+	//computes the # of words that vdl's variable declarations would place on the stack frame
 	public int wordsOnStackFrame(VarDeclList vdl) {
-		//computes the # of words that vdl's variable declarations would place on the stack frame
         int numWords = 0;
 
         for(VarDecl v : vdl){
@@ -90,12 +106,13 @@ public class CG1Visitor extends ASTvisitor {
         return numWords;
 	}
 
+	/*
+	computes # of words that an object of type t would grow the stack by
+	void = 0, abject/array/boolean = 1, int = 2
+	*/
 	public int wordsOnStackFrame(Type t) {
-	    //computes # of words that an object of type t would grow the stack by if it was pushed
-        //on the stack by if it were pushed onto the stack.
-        //void = 0, abject/array/boolean = 1, int = 2
 
-        if(t instanceof IntegerType){
+		if(t instanceof IntegerType){
             return 2;
         }
         else if(!(t instanceof VoidType)){
@@ -121,4 +138,115 @@ public class CG1Visitor extends ASTvisitor {
     }
 
     ///////////////// Helper Methods /////////////////////////////
+
+    private ClassDecl findClassDecl (ClassDecl cd) {
+	    if (cd.superLink == null) return cd;
+	    else return findClassDecl(cd.superLink);
+    }
+
+    @Override
+    public Object visitProgram(Program n) {
+	    code.emit(n, ".data");
+	    //traverse classDecl
+        findClassDecl(n.classDecls.elementAt(0)).accept(this);
+
+        code.flush();
+        return null;
+    }
+
+    @Override
+    public Object visitClassDecl(ClassDecl cd) {
+
+	    //TODO: check how this is supposed to be called
+	    currentMethodTable = new Vector<String>(superclassMethodTables.peek());
+	    currentMethodOffset = 1 + currentMethodTable.size(); //numMethods(cd.superLink);
+
+        //set data and object offsets
+        if(cd.superLink == null) {
+            currentDataInstVarOffset = -16;
+            currentObjInstVarOffset = 0;
+        } else {
+            currentDataInstVarOffset = -16 - 4*(cd.superLink.numDataInstVars);
+            currentObjInstVarOffset = 4*(cd.superLink.numObjInstVars);
+        }
+
+        //super call, subnode traversal
+        super.visitClassDecl(cd);
+
+        cd.numDataInstVars = (-16-currentDataInstVarOffset)/4;
+        cd.numObjInstVars = currentObjInstVarOffset/4;
+
+        code.emit(cd, "CLASS_"+cd.name+":");
+
+        if (cd.superLink == null) {
+            code.emit(cd, ".word 0");
+        } else {
+            code.emit(cd, ".word CLASS_"+cd.superName);
+        }
+        //loop through currentmethodtable vector to emit each method address
+        for (String addr : currentMethodTable) {
+            code.emit(cd,".word"+ addr);
+        }
+
+        //push method table onto the super method tables
+        superclassMethodTables.push(currentMethodTable);
+        cd.subclasses.accept(this); //subclasses
+
+        superclassMethodTables.pop();
+        code.emit(cd, "CLASS_END_"+cd.name+":");
+
+        return null;
+    }
+
+    @Override
+    public Object visitMethodDecl(MethodDecl md) {
+
+	    md.thisPtrOffset = 4*(1+wordsOnStackFrame(md.formals));
+	    currentMethodOffset = md.thisPtrOffset;
+
+	    //subclasses
+        super.visitMethodDecl(md);
+
+        if(md.superMethod == null) {
+            md.vtableOffset = currentMethodOffset;
+            currentMethodOffset++;
+        } else {
+            md.vtableOffset = md.superMethod.vtableOffset;
+        }
+
+        //method labels
+        registerMethodInTable(md);
+
+	    return null;
+    }
+
+    @Override
+    public Object visitInstVarDecl(InstVarDecl n) {
+        super.visitInstVarDecl(n);
+
+        //int or boolean
+        if(isDataType(n.type)) {
+            n.offset = currentDataInstVarOffset;
+            currentDataInstVarOffset = currentDataInstVarOffset - 4;
+        } else if (isObjectType(n.type)) { //object/array types
+            n.offset = currentObjInstVarOffset;
+            currentObjInstVarOffset = currentObjInstVarOffset + 4;
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitFormalDecl(FormalDecl n) {
+        super.visitFormalDecl(n);
+
+        //set the offset based on type in parameters
+        if (n.type instanceof IntegerType) {
+            currentFormalVarOffset = currentFormalVarOffset - 8;
+        } else {
+            currentFormalVarOffset = currentFormalVarOffset - 4;
+        }
+
+        n.offset = currentFormalVarOffset;
+        return null;
+    }
 }
