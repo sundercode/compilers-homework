@@ -13,36 +13,36 @@ import java.awt.Point;
 // - instance variables, with respect to their slot in the object
 // - methods, with respect to their slot in the v-table
 public class CG1Visitor extends ASTvisitor {
-	
+
 	// Error message object
 	ErrorMsg errorMsg;
-	
+
 	// IO stream to which we will emit code
 	CodeStream code;
-	
+
 	// v-table offset of next method we encounter
 	int currentMethodOffset;
-	
+
 	// offset in object of next "object" instance variable we encounter
 	int currentObjInstVarOffset;
-	
+
 	// offset in object of next "data" instance variable we encounter
 	int currentDataInstVarOffset;
-	
+
 	// stack-offset of next formal parameter we encounter
 	int currentFormalVarOffset;
-	
+
 	// stack method tables for current class and all superclasses
 	Stack<Vector<String>> superclassMethodTables;
-	
+
 	// current method table
 	Vector<String> currentMethodTable;
-	
+
 	public CG1Visitor(ErrorMsg e, PrintStream out) {
 		errorMsg = e;
 		initInstanceVars(e, out);
 	}
-	
+
 	private void initInstanceVars(ErrorMsg e, PrintStream out) {
 		errorMsg = e;
 		currentMethodOffset = 0;
@@ -56,7 +56,6 @@ public class CG1Visitor extends ASTvisitor {
 	///////////////// Helper Methods /////////////////////////////
 
 	//computes the number of total methods that cd has seen.
-    //TODO: this method needs to be finished!!
 	public int numMethods(ClassDecl cd) {
 
 	    if (cd == null) {
@@ -87,12 +86,20 @@ public class CG1Visitor extends ASTvisitor {
 		//may require enlarging the currentMethodTable, so that it has room for new entry
         if(md.pos < 0) {
             currentMethodTable.add(md.vtableOffset - 1, md.name + "_" + md.classDecl.name);
+			//label = md.name + "_" + md.classDecl.name
         }
         else{
             currentMethodTable.add(md.vtableOffset - 1, "fcn_" + md.uniqueId + "_" + md.name);
+			//label = "fcn_" + md.uniqueId + "_" + md.name
         }
 
-        //TODO: grow the currentMethodTable?? please check this
+        if (md.superMethod != null) { //grow the table correctly if our super method is null!
+			md.vtableOffset = md.superMethod.vtableOffset;
+			currentMethodTable.set(md.vtableOffset, label); //where label is the class table names above
+		} else {
+			md.vtableOffset = currentMethodTable.size() - 1;
+			currentMethodTable.add(label)
+		}
 	}
 
 	//computes the # of words that vdl's variable declarations would place on the stack frame
